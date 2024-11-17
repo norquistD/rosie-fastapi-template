@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 
 from routes import example
 
+# Create an instance of the APIRouter class
 api_router = APIRouter()
 
 
@@ -16,4 +17,5 @@ async def root() -> JSONResponse:
     )
 
 
+# Include the example router from routes/example.py
 api_router.include_router(example.router)

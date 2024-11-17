@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 
+# An example model to demonstrate the usage of BaseModel
 class Example(BaseModel):
     id: int = Field(default=1)
     name: str = Field(default="John Doe")

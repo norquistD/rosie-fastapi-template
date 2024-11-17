@@ -4,11 +4,14 @@ from fastapi.responses import Response, JSONResponse
 
 from core.models import Example
 
+# Create a new APIRouter instance
 router = APIRouter(prefix="/test", tags=["test"])
 
+# Create a list to store example data, this can be any data structure you want. This is just for example purposes.
 example_data: List[Example] = []
 
 
+# List of example data to be used for testing
 @router.get(
     "/get/", responses={200: {"model": List[Example], "description": "Example data"}}
 )
@@ -22,6 +25,7 @@ async def example_get() -> JSONResponse:
     )
 
 
+# Create an example object and add it to the example data list
 @router.post(
     "/post/",
     responses={
@@ -45,6 +49,7 @@ async def example_post(example: Example) -> JSONResponse:
     )
 
 
+# Update an example object in the example data list
 @router.put(
     "/put/",
     responses={
@@ -66,6 +71,7 @@ async def example_put(example: Example) -> JSONResponse:
     return JSONResponse(404, content={"response": "Example not found."})
 
 
+# Delete an example object from the example data list
 @router.delete(
     "/delete/",
     responses={

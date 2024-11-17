@@ -1,12 +1,12 @@
-import os
 import logging
 from pydantic import BaseModel
 
 from .settings import get_settings
 
+# Create the logger object
 logger = logging.getLogger("uvicorn.error")
 
-
+# Create the Colors object to add colors to the logs
 if get_settings().ENVIRONMENT == "local":
 
     class COLORS(BaseModel):

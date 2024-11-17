@@ -6,6 +6,7 @@ from core.logger import logger
 from core.settings import get_settings
 from core.middleware.token_validator import TokenValidationMiddleware, validate_token
 
+# Initialize the FastAPI app with Token Validation Middleware
 app = FastAPI(
     title=get_settings().APP_NAME,
     version=get_settings().APP_VERSION,
@@ -16,11 +17,13 @@ app = FastAPI(
 app.add_middleware(TokenValidationMiddleware)
 
 
+# Default ping endpoint to check if app is running
 @app.get("/ping/", tags=["admin"])
 async def health_check():
     return Response(status_code=status.HTTP_200_OK)
 
 
+# Custom login page for the API
 @app.get("/login/", tags=["admin"], include_in_schema=False)
 async def login_page():
     html_content = f"""
@@ -41,6 +44,7 @@ async def login_page():
     return HTMLResponse(html_content)
 
 
+# Custom endpoint to submit the password
 @app.post("/submit-token/", tags=["admin"], include_in_schema=False)
 async def submit_token(token: str = Form(...)):
     result = validate_token(token)
@@ -60,9 +64,11 @@ async def submit_token(token: str = Form(...)):
     return JSONResponse(status_code=401, content={"detail": "Invalid token"})
 
 
+# Include the API router for all the endpoints
 app.include_router(api_router)
 
 
+# Event handler to log the app URL on startup
 @app.on_event("startup")
 async def startup_event():
     logger.info(
