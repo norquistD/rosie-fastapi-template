@@ -82,7 +82,8 @@ This will install the model into the container, and allow it to be used by the d
 
 > ***But my model is too large to package into the container! What do you I do?***
 >
-> You can pre-upload your model to Rosie into a location you can access (/home/{your username}/{model location}) and point your code to use that location. Make sure that if your application is made public to the entire MSOE populace, that it is put somewhere *everyone* can acces (/data/{some shared location}) (You'll have to reach out to Dr. Retert about getting the model put somwhere public). 
+> You can pre-upload your model to Rosie into a location you can access (/home/{your username}/{model location}) and point your code to use that location. Make sure that if your application is made public to the entire MSOE populace, that it is put somewhere *everyone* can acces (/data/{some shared location}) 
+# (You'll have to reach out to Dr. Retert about getting the model put somwhere public). 
 
 ## Validating Deployment
 You can validate your deployment actually works before deploying to Rosie with the following command:
@@ -155,4 +156,4 @@ singularity build rosie_application.sif docker://your-docker-hub-username/rosie-
 
 Now, your application should be running on Rosie!
 
-If you want to share your application for everyone at MSOE to use, contact Dr. Retert for more information.
+# If you want to share your application for everyone at MSOE to use, contact Dr. Retert for more information.
