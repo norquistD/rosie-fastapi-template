@@ -117,7 +117,7 @@ At this point, steps diverge depending on if you have sandbox access and are pla
 ```
 sbatch run.sh <password> -i your-docker-hub-username/rosie-application
 ```
-> The password tag is a required argument. This will be the password to access your application. This will be the value you put in the first time you go to your application after startup. You can use any value here, just remember it for later and give it to others to use if they also will be using your application.
+> The password tag is a required argument. This will be the password to access your application. This will be the value you put in the first time you go to your application after startup. You can use any value here, just remember it for later and give it to others to use if they also will be using your application. **NOTE: Do not use a password you use for other applications, especially if you plan to share it!**
 8. In the Rosie file manager, go to where you put the `run.sh` script. You should now see two folders. `image` and `output`.
 
     - `image`: Contains the built singularity image for your application
