@@ -115,13 +115,18 @@ At this point, steps diverge depending on if you have sandbox access and are pla
 6. In the Rosie terminal, navigate into the folder you put the `run.sh` file.
 7. Execute `run.sh` using the following command:
 ```
-sbatch run.sh <password> -i your-docker-hub-username/rosie-application
+sbatch run.sh -i your-docker-hub-username/rosie-application
 ```
-> The password tag is a required argument. This will be the password to access your application. This will be the value you put in the first time you go to your application after startup. You can use any value here, just remember it for later and give it to others to use if they also will be using your application. **NOTE: Do not use a password you use for other applications, especially if you plan to share it!**
-8. In the Rosie file manager, go to where you put the `run.sh` script. You should now see two folders. `image` and `output`.
+> For future executions, assuming you do not need to rebuild the image, you an just run `sbatch run.sh`.
+> If you need to rebuild the image, you can either delete the old one or run 
+> ```
+> sbatch run.sh -f -i your-docker-hub-username/rosie-application
+> ```
+8. In the Rosie file manager, go to where you put the `run.sh` script. You should now see two folders. `image` and `output`, as well as a `password.txt` file.
 
     - `image`: Contains the built singularity image for your application
     - `output`: Contains the logs from your server for each instance of the application ran. They are tagged by the sbatch job ids.
+    - `password.txt`: Contains a randomly generated password which you can use to access your API. This password is *persistent* (the API will not generate new ones per run, so long as this file exists. To reset your password, just delete this file and restart the server. This file is protected so that only the owner (you) can read/write to it.) **COPY THE PASSWORD INSIDE OF THIS FILE FOR LATER**.
 
 9. Open the `output` folder, and open the newly created file in there. *(It should be titled something like job_123456.out)*
 10. You should see an output something similar to this at the top.

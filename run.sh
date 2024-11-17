@@ -13,24 +13,15 @@
 mkdir -p output
 mkdir -p image
 
+## Set secure permissions for the output log file
+chmod 600 output/job_${SLURM_JOB_ID}.out
+
 ## Default values
 MAIL_USER="student@msoe.edu"
 DOCKER_IMAGE="nvidia/cuda:12.5.0-devel-ubuntu22.04"
 IMAGE_PATH="./image/container.sif"
+PASSWORD_FILE="./password.txt"
 FORCE_REBUILD=false
-
-if [ $# -lt 1 ]; then
-    echo "Usage: sbatch $0 <required_argument> [-m mail_user] [-i docker_image] [-f (force rebuild)]" >&2
-    exit 1
-fi
-
-## First argument is the required argument
-PASSWORD="$1"
-shift # Shift arguments to ignore the first one for getopts
-
-## Create hashed+salted password
-export SALT=$(openssl rand -hex 16)
-export API_TOKEN=$(echo -n "${SALT}${PASSWORD}" | openssl dgst -sha256 | awk '{print $2}')
 
 ## Parse optional command-line arguments
 while getopts "m:i:f" opt; do
@@ -38,7 +29,7 @@ while getopts "m:i:f" opt; do
         m) MAIL_USER="$OPTARG" ;;
         i) DOCKER_IMAGE="$OPTARG" ;;
         f) FORCE_REBUILD=true ;;
-        *) echo "Usage: sbatch $0 <required_argument> [-m mail_user] [-i docker_image] [-f (force rebuild)]" >&2
+        *) echo "Usage: sbatch $0 [-m mail_user] [-i docker_image] [-f (force rebuild)]" >&2
            exit 1 ;;
     esac
 done
@@ -68,6 +59,20 @@ find_port() {
 
     echo "No open port found in the range $start_port-$end_port" >&2
     return 1
+}
+
+## Function to generate a random password if the password file does not exist or is empty
+generate_password() {
+    if [[ -f "$PASSWORD_FILE" && -s "$PASSWORD_FILE" ]]; then
+        echo "Using existing password from $PASSWORD_FILE"
+        PASSWORD=$(cat "$PASSWORD_FILE")
+    else
+        echo "Generating a new random password..."
+        PASSWORD=$(openssl rand -base64 16)
+        echo "$PASSWORD" > "$PASSWORD_FILE"
+        chmod 600 "$PASSWORD_FILE"
+        echo "Password saved to $PASSWORD_FILE with restricted permissions."
+    fi
 }
 
 ## Function to pull Docker image and build Singularity image if it does not exist or if forced
@@ -115,7 +120,14 @@ MODIFIED_URL=$(echo "$BASE_URL" | sed -e 's#^/node/##' -e 's#/[^/]*$##')
 echo "BASE_URL: $BASE_URL"
 echo "MODIFIED_URL: $MODIFIED_URL"
 
-# Run the Singularity container with the specified command
+# Generate or retrieve the password
+generate_password
+
+# Create the hashed+salted password
+export SALT=$(openssl rand -hex 16)
+export API_TOKEN=$(echo -n "${SALT}${PASSWORD}" | openssl dgst -sha256 | awk '{print $2}')
+
+# Run the Singularity container with the generated API token
 echo "Running Singularity container..."
 singularity exec --nv --network-args portmap=$PORT:$PORT -B /data:/data $IMAGE_PATH uvicorn --app-dir /var/task/app main:app --port $PORT --host $MODIFIED_URL
 
