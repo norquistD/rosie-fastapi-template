@@ -3,7 +3,7 @@ Adam Haile - 10/2024
 
 > Requires: Python 3.12, pipenv, [Docker](https://docs.docker.com/get-started/get-docker/), [Docker Hub](https://app.docker.com/signup?_gl=1*8zm98o*_gcl_au*NDgyODM1ODIwLjE3MjgzMjUzMzA.*_ga*MTY2ODMxMDUxLjE3Mjc0NjkwMTg.*_ga_XJWPQMJYHQ*MTczMTYyMTczNi43LjEuMTczMTYyMTc0Mi41NC4wLjA.), Rosie Access
 
-This template is meant to be a starting point for creating a new Rosie application in Python via a FastAPI. This FastAPI application includes built in security to ensure users across Rosie cannot access endpoints without credentials, templating for adding/modifying/removing your own API endpoints, and documentation on how to deploy to Rosie. It includes a basic directory structure and some example code to get you started.
+This template is meant to be a starting point for creating a new Rosie application in Python via a [FastAPI](https://fastapi.tiangolo.com/). This FastAPI application includes built in security to ensure users across Rosie cannot access endpoints without credentials, templating for adding/modifying/removing your own API endpoints, and documentation on how to deploy to Rosie. It includes a basic directory structure and some example code to get you started.
 
 ## Local Development
 This application uses [pipenv](https://pipenv.pypa.io/en/latest/) for local development. To set up the pipenv locally, you can run the following commands on your local machine:
@@ -21,7 +21,7 @@ Once you have run `pipenv run start`, the server will spin up and provide you wi
 ![{"status": "OK}](./images/root.png)
 
 You can then access the Docs page via http://localhost:8080/docs
-The docs page will have a health endpoint, and 4 example endpoints by default. These example endpoints are a set of basic CRUD endpoints, and can be found at [example.py](./src/routes/example.py).
+The docs page will have a health endpoint, and 4 example endpoints by default. These example endpoints are a set of basic [CRUD](https://www.codecademy.com/article/what-is-crud) endpoints, and can be found at [example.py](./src/routes/example.py).
 
 You can also modify the base information of the application in the [api.py](./src/api.py).
 
