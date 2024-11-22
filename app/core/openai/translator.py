@@ -1,5 +1,5 @@
 from openai import AsyncOpenAI
-
+import json
 from core.settings import get_settings
 
 async def translate_to_language(text: str, language: str, asyncClient: AsyncOpenAI):
@@ -36,11 +36,11 @@ async def translate_to_language(text: str, language: str, asyncClient: AsyncOpen
                     "translated_language": {
                         "type": "string",
                         "description": f"The translation into {language}."
+                    },
+                    "original_language": {
+                        "type": "string",
+                        "description": f"Original sentence English."
                     }
-                },
-                "original_language": {
-                    "type": "string",
-                    "description": f"Original sentence English."
                 },
                 "required": ["translated_language"]
             }
@@ -62,4 +62,6 @@ async def translate_to_language(text: str, language: str, asyncClient: AsyncOpen
         messages=messages_tools
     )
     
-    return res.choices[0].message.tool_calls[0].function.arguments["translated_language"]
+    translation = json.loads(res.choices[0].message.tool_calls[0].function.arguments)
+
+    return translation['translated_language']
