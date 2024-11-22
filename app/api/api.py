@@ -5,6 +5,7 @@ from openai import AsyncOpenAI
 from routes import example
 from core.database.psql import *
 from core.openai.translator import *
+from core.settings import *
 
 # Create an instance of the APIRouter class
 api_router = APIRouter()
@@ -15,7 +16,7 @@ api_router = APIRouter()
 @api_router.api_route("/", methods=["GET", "POST"], include_in_schema=False)
 async def root() -> JSONResponse:
     return JSONResponse(
-        status_code=200, content={"message": f"Welcome to the Rosie FastAPI Template"}
+        status_code=200, content={"message": f"Welcome to the Rosie FastAPI Template {get_settings().APP_VERSION}"}
     )
 
 @api_router.api_route("/translate", methods=["GET", "POST"], include_in_schema=False)

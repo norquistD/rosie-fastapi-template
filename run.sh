@@ -9,6 +9,13 @@
 #SBATCH --cpus-per-gpu=4
 #SBATCH --time=06:00:00
 
+echo "Starting up Database..."
+
+/data/ai_club/nes_2025/database/bin/pg_ctl -D /data/ai_club/nes_2025/database/data start
+echo "$(ls -l /tmp/.s.PGSQL.5432)"
+
+echo "Database Started..."
+
 ## Ensure output and image directories exist
 mkdir -p output
 mkdir -p image
@@ -133,12 +140,5 @@ echo "Running Singularity container..."
 singularity exec --nv --network-args portmap=$PORT:$PORT -B /data:/data $IMAGE_PATH uvicorn --app-dir /var/task/app main:app --port $PORT --host $MODIFIED_URL
 
 echo "Singularity container execution finished."
-
-echo "Starting up Database..."
-
-/data/ai_club/nes_2025/database/bin/pg_ctl -D /data/ai_club/nes_2025/database/data start
-echo "$(ls -l /tmp/.s.PGSQL.5432)"
-
-echo "Database Started..."
 
 ## SCRIPT END
