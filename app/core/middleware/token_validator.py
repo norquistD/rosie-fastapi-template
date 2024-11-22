@@ -10,7 +10,7 @@ def validate_token(token: str) -> bool:
     salt = get_settings().SALT
     api_token = get_settings().API_TOKEN
 
-    return hashlib.sha256((salt + token).encode()).hexdigest() == api_token
+    return hashlib.sha256((salt + token.strip()).encode()).hexdigest() == api_token
 
 
 class TokenValidationMiddleware(BaseHTTPMiddleware):

@@ -1,8 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
+from openai import AsyncOpenAI
 
 from routes import example
 from core.database.psql import *
+from core.openai.translator import *
 
 # Create an instance of the APIRouter class
 api_router = APIRouter()
@@ -16,19 +18,41 @@ async def root() -> JSONResponse:
         status_code=200, content={"message": f"Welcome to the Rosie FastAPI Template"}
     )
 
-@api_router.api_route("/ez-life", methods=["GET", "POST"], include_in_schema=False)
-async def root() -> JSONResponse:
+@api_router.api_route("/translate", methods=["GET", "POST"], include_in_schema=False)
+async def root(request: Request) -> JSONResponse:
+    # For GET requests, the text and language are retrieved as query parameters
+    text = request.query_params.get('text', None)
+    language = request.query_params.get('language', None)
+
+    # If it's a POST request, check if the text and language are in the body
+    if request.method == "POST":
+        body = await request.json()
+        text = body.get('text', text)
+        language = body.get('language', language)
+
+    # Ensure both text and language are provided
+    if not text or not language:
+        raise HTTPException(status_code=400, detail="Both 'text' and 'language' parameters are required")
+
+    # Connect to the database
     conn = await open_connection('direct-supply', 'norquistd', 'IcedPhoenix#3374', '/tmp', 5432)
 
     if not conn:
-        print("Failed to connect to the database.")
+        raise HTTPException(status_code=500, detail="Failed to connect to the database")
+
     try:
         api_key = (await conn.fetch("SELECT key from ds.api_key where description = 'Direct Supply OpenAI Key'"))[0]['key']
     except Exception as e:
-        print(f"{e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve API key: {e}")
+
+    # Perform translation (ensure the translate_to_language and AsyncOpenAI are properly defined)
+    try:
+        translation = await translate_to_language(text, language, AsyncOpenAI(api_key=api_key))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Translation failed: {e}")
 
     return JSONResponse(
-        status_code=200, content={"message": f"{api_key}"}
+        status_code=200, content={"translated_text": translation}
     )
 
 

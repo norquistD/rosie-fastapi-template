@@ -10,13 +10,17 @@ async def translate_to_language(text: str, language: str, asyncClient: AsyncOpen
         },
         {
             "role": "user",
-            "content": f"""Translate this into {language}: 
+            "content": f"""Translate this into {language}:
             '{text}'
+            ---
+            Return only the translated text.
             """
         }
     ]
-    res = await asyncClient.chat.completions.create(
+    
+    completion = await asyncClient.chat.completions.create(
         model=get_settings().MODEL,
         messages=messages
     )
-    return res.choices[0].message.tool_calls[0].function.arguments
+
+    return completion.choices[0].message.content
