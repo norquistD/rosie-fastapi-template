@@ -1,6 +1,8 @@
 # Rosie FastAPI Application Template
 Adam Haile - 10/2024
 
+> **NOTE: BEFORE CLONING LOCALLY, RUN THE FOLLOWING COMMAND!! `git config --global core.autocrlf false`**
+
 > Requires: Python 3.12, pipenv, [Docker](https://docs.docker.com/get-started/get-docker/), [Docker Hub](https://app.docker.com/signup?_gl=1*8zm98o*_gcl_au*NDgyODM1ODIwLjE3MjgzMjUzMzA.*_ga*MTY2ODMxMDUxLjE3Mjc0NjkwMTg.*_ga_XJWPQMJYHQ*MTczMTYyMTczNi43LjEuMTczMTYyMTc0Mi41NC4wLjA.), Rosie Access
 
 This template is meant to be a starting point for creating a new Rosie application in Python via a FastAPI. This FastAPI application includes built in security to ensure users across Rosie cannot access endpoints without credentials, templating for adding/modifying/removing your own API endpoints, and documentation on how to deploy to Rosie. It includes a basic directory structure and some example code to get you started.
@@ -144,7 +146,7 @@ sbatch run.sh -i your-docker-hub-username/rosie-application
     - This should return a page that looks like this:
     ![Login page](./images/password.png) 
 
-13. In the password box, put in your password that we made early when running our sbatch script.
+13. In the password box, put in your password that was generated in password.txt.
 
 Once you complete this, you should be redirected to your docs page of your API! You will remain logged in to your API (meaning you won't be reprompted for your password) as long as the sbatch script is running. If you start a new one, you will be reprompted the first time you go to it.
 
