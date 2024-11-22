@@ -17,7 +17,7 @@ mkdir -p image
 chmod 600 output/job_${SLURM_JOB_ID}.out
 
 ## Default values
-MAIL_USER="student@msoe.edu"
+MAIL_USER="norquistd@msoe.edu"
 DOCKER_IMAGE="nvidia/cuda:12.5.0-devel-ubuntu22.04"
 IMAGE_PATH="./image/container.sif"
 PASSWORD_FILE="./password.txt"
