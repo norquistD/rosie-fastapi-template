@@ -16,6 +16,12 @@ async def root() -> JSONResponse:
         status_code=200, content={"message": f"Welcome to the Rosie FastAPI Template"}
     )
 
+@api_router.api_route("/ez-life", methods=["GET", "POST"], include_in_schema=False)
+async def root() -> JSONResponse:
+    return JSONResponse(
+        status_code=200, content={"message": f"EZ LIFE EZ CODE"}
+    )
+
 
 # Include the example router from routes/example.py
 api_router.include_router(example.router)
