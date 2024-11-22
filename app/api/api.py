@@ -7,7 +7,6 @@ from core.database.psql import *
 # Create an instance of the APIRouter class
 api_router = APIRouter()
 
-
 # This is both a GET and a POST because the Rosie OOD performs a POST request by
 # default to supply the API token in the body, not in the query parameters, including
 # GET requests allows for this to be flexible for if the user refreshes the page.

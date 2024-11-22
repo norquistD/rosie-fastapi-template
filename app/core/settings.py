@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     )
 
     ENVIRONMENT: str = "Rosie"
+    MODEL: str = "gpt-4o-mini"
     DEVICE: str = "cuda"
     BASE_URL: str = ""
 
