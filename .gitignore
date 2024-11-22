@@ -1,3 +1,6 @@
 output/*
 image/*
 password.txt
+.env
+audio_upload.ipynb
+HelloSoundEffect.mp3

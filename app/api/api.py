@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, File, UploadFile, BackgroundTasks
 from fastapi.responses import JSONResponse
 from openai import AsyncOpenAI
 
@@ -55,7 +55,19 @@ async def root(request: Request) -> JSONResponse:
     return JSONResponse(
         status_code=200, content={"translated_text": translation}
     )
+    
+# Audio upload endpoint
+@api_router.post("/upload")
+async def upload_audio(file: UploadFile = File(...)):
+    contents = await file.read()
+    file_location = f"uploaded_{file.filename}"
+    with open(file_location, "wb") as f:
+        f.write(contents)
 
+    return JSONResponse(
+        status_code=200,
+        content={"filename": file.filename, "status": "Downloaded filename"}
+    )
 
-# Include the example router from routes/example.py
+# Include the example router
 api_router.include_router(example.router)
