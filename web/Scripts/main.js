@@ -4,7 +4,9 @@
 var Language = "English";
 var mode = 0;
 var correct_answer;
-history = [{"role": "system", "content": "You are a helpful assistant for a children meseum."}];
+const history = [
+  {"role": "system", "content": "You are a helpful assistant at a children's meusem. I would you to make your responses one sentence and fewer than 50 words."}
+]
 
 //Audio globals
 let mediaRecorder; // To manage the recording state
@@ -139,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             transcripeFile(audioFile)
            .then((transcript) => { addTranscript(transcript.transcription);
-              history[history.length + 1] = {"role": "user", 
+              history[history.length] = {"role": "user", 
                 "content" : transcript.transcription}
                 generateResponce();
               }
@@ -548,10 +550,20 @@ async function transcripeFile(audioFile) {
 }
 
 async function generateResponce(){
+  const url = "http://localhost:8080/continue-chat";
+// Storing the history data in LocalStorage
 console.log(history);
+localStorage.setItem('history', JSON.stringify(history));
+
+// Retrieving the history data from LocalStorage
+const storedHistory = JSON.parse(localStorage.getItem('history'));
+
   try {
-    await axios.post(url, json=history).then(response => { // Wait for the response
-      console.log(response);
+    await axios.post(url, storedHistory).then(response => {
+       // Wait for the response
+       history[history.length] = {"role": "assistant", 
+        "content" : response.data.reply}
+      addResponce(response.data.reply);
     return response.data}); // Return the response data
   } catch (error) {
     console.error("Error in postData:", error);
