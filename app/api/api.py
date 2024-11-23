@@ -15,7 +15,7 @@ class Message(BaseModel):
     content: str
 
 # Create an instance of the APIRouter class
-api_router = APIRouter()
+api_router = APIRouter(tags=['discovery-world'])
 
 # This is both a GET and a POST because the Rosie OOD performs a POST request by
 # default to supply the API token in the body, not in the query parameters, including
@@ -26,7 +26,7 @@ async def root() -> JSONResponse:
         status_code=200, content={"message": f"Welcome to the Rosie FastAPI Template {get_settings().APP_VERSION}"}
     )
 
-@api_router.api_route("/translate", methods=["GET", "POST"], include_in_schema=False)
+@api_router.post("/translate")
 async def translate(request: Request) -> JSONResponse:
     # For GET requests, the text and language are retrieved as query parameters
     text = request.query_params.get('text', None)
@@ -51,7 +51,7 @@ async def translate(request: Request) -> JSONResponse:
         status_code=200, content={"translated_text": translation}
     )
 
-@api_router.api_route("/sound-like", methods=["GET", "POST"], include_in_schema=False)
+@api_router.post("/sound-like")
 async def sound_like(request: Request) -> JSONResponse:
     # For GET requests, the text and speaker are retrieved as query parameters
     text = request.query_params.get('text', None)
@@ -161,7 +161,7 @@ async def generate_quiz(experience: str = Body(..., embed=True), quiz_type: str 
     return JSONResponse(status_code=200, content=quiz)
 
 # Chat continuation endpoint
-@api_router.post("/get-experiences")
+@api_router.get("/get-experiences")
 async def get_experiences():
     # Load the JSON file
     experiences = pd.read_json('app/api/exhibits.json')
@@ -176,6 +176,3 @@ async def get_experiences():
     ])
 
     return response_content
-
-# Include the example router
-api_router.include_router(example.router)
