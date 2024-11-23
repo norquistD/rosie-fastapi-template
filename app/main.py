@@ -15,7 +15,6 @@ app = FastAPI(
     redirect_slashes=True,
 )
 
-app.add_middleware(TokenValidationMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,6 +22,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(TokenValidationMiddleware)
+
+# Include the API router for all the endpoints
+app.include_router(api_router)
 
 # Default ping endpoint to check if app is running
 @app.get("/ping/", tags=["admin"])
@@ -69,11 +73,6 @@ async def submit_token(token: str = Form(...)):
         return response
 
     return JSONResponse(status_code=401, content={"detail": "Invalid token"})
-
-
-# Include the API router for all the endpoints
-app.include_router(api_router)
-
 
 # Event handler to log the app URL on startup
 @app.on_event("startup")
