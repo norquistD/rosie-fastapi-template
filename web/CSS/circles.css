@@ -1,0 +1,43 @@
+/* Circular image */
+
+.circleTransition {
+  position: fixed;
+    top: -20%; /* Adjust to your preferred percentage from the top */
+    right: -5%; /* Adjust to your preferred percentage from the right */
+    width: 110vw; /* 20% of the viewport width */
+    height: 110vw; /* Keep the height the same as the width for a perfect circle */
+    overflow: hidden; /* Hide the portion of the image outside the container */
+    border-radius: 10%; /* Create the circular shape */
+    border: 2vw solid white; /* White border, using viewport width for relative size */
+    box-shadow: 0px 0px 0px 2vw rgba(98, 98, 98, 0.5);
+    transition: 1s;
+    z-index:30;
+}
+
+  
+.circleImage {
+  position: fixed;
+  top: -10%; /* Adjust to your preferred percentage from the top */
+  right: -20%; /* Adjust to your preferred percentage from the right */
+  width: 50vw; /* 20% of the viewport width */
+  height: 50vw; /* Keep the height the same as the width for a perfect circle */
+  overflow: hidden; /* Hide the portion of the image outside the container */
+  border-radius: 50%; /* Create the circular shape */
+  border: 2vw solid white; /* White border, using viewport width for relative size */
+  box-shadow: 0px 0px 0px 2vw rgba(98, 98, 98, 0.5);
+  transition: 1s;
+  }
+  
+  
+  .circleImage2 {
+    position: fixed;
+    top: -10%; /* Adjust to your preferred percentage from the top */
+    right: 65%; /* Adjust to your preferred percentage from the right */
+    width: 50vw; /* 20% of the viewport width */
+    height: 50vw; /* Keep the height the same as the width for a perfect circle */
+    overflow: hidden; /* Hide the portion of the image outside the container */
+    border-radius: 50%; /* Create the circular shape */
+    border: 2vw solid white; /* White border, using viewport width for relative size */
+    box-shadow: 0px 0px 0px 2vw rgba(98, 98, 98, 0.5);
+    transition: 1s;
+  }

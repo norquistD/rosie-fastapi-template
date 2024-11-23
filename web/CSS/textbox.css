@@ -1,0 +1,17 @@
+#textBox {
+    padding: 1vh;
+    position: absolute;
+    top: 25%;
+    background-color:rgba(16, 11, 27, 0.7);
+    width:80vw;
+    height: 54vh;
+    border: 0.3vw solid #626262;
+    border-radius: 2vw;
+    z-index:-50;
+    transition: 1s;
+    overflow: hidden;
+}
+.lower {
+    top: 47% !important;
+    height: 36vh !important;
+}

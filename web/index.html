@@ -1,0 +1,124 @@
+<head>
+    <link rel="stylesheet" href="./CSS/App.css">
+    <link rel="stylesheet" href="./CSS/buttons.css">
+    <link rel="stylesheet" href="./CSS/circles.css">
+    <link rel="stylesheet" href="./CSS/language.css">
+    <link rel="stylesheet" href="./CSS/microphone.css">
+    <link rel="stylesheet" href="./CSS/textbox.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="./Scripts/main.js"></script>
+    <script src="./Scripts/particles.min.js"></script>
+    <script src="./Scripts/confetti.js"></script>
+</head>
+
+
+<body>
+    <div id="particles-js"></div>
+    <script src="./Scripts/particles.js"></script>
+
+  <div id="wrapper">
+    <div id="headerDiv" class="layer">
+        <img src="./images/logos/DW.png" float="center" width="25%"></img>
+      </div>
+
+
+      <div id="bodyDiv" class="layer">
+        <div id="circleBox">
+            <div id="circleImageContainer" onClick="" >
+                <img id="circleImage" class="circleImage" src='./images/filler.jpg'  alt="Your Image"></img>
+              </div>
+            <div id="circleImageContainer2" onClick="">
+                <img id="circleImage2" class="circleImage2" src='./images/filler2.avif'  alt="Your Image"></img>
+              </div>
+        </div>
+        <button id="moder" style="z-index:1000" onClick="modder()"></button>
+        <button id="moder" style="z-index:1000; top:60%;" onClick="addTranscript('Test input form user, making this long so it goe sot the next line and all that stuff yk?')"></button>
+        <button id="moder" style="z-index:1000; top:70%" onClick="addResponce('Major nerd responce')"></button>
+        <div z-index="20">
+            <button id ="microphone"  
+        onClick="toggleMicrophoneIcon()"
+        >
+        <img src="./images/logos/microphone.svg" id="microphoneIcon" class=""></img>
+      </button>
+        </div>
+
+        <button onClick="backToMain()"
+            id="backArrow" class="hidden">
+                <img src="./assets/backArrow.svg"  id="langaugeIcon"></img>
+            </button>
+
+          <div id="textBox">
+          
+           </div>
+           <div id="buttonGrid">
+                <button id="prompt" class="activeButton" onClick="quizBegin()">
+                    Take a Quiz!
+                </button>
+
+                <button id="leftPrompt" class="inactiveButton" onClick="quizBeginMC()">
+                  Multiple Choice!
+                </button>
+
+              <button id="rightPrompt" class="inactiveButton" onClick="quizBeginTF()">
+                True/False
+              </button>
+
+            <button id="trueButton" class="inactiveButton" onClick="quizAnswerTF('True')">
+              True
+            </button>
+
+            <button id="falseButton" class="inactiveButton" onClick="quizAnswerTF('False')">
+              False
+            </button>
+
+          <button id="buttonA" class="inactiveButton" onClick="quizAnswerMC('0', this)">
+            <img src="./assets/whiteTriangle.png" width="20%"></img>
+          </button>
+
+          <button id="buttonB" class="inactiveButton" onClick="quizAnswerMC('1', this)">
+            <img src="./assets/whiteSquare.png" width="20%"></img>
+          </button>
+          <button id="buttonC" class="inactiveButton" onClick="quizAnswerMC('2', this)">
+            <img src="./assets/whiteCircle.png" width="20%"></img>
+         </button>
+         <button id="buttonD" class="inactiveButton"  onClick="quizAnswerMC('3', this)">
+          <img id="buttonDSymbol" src="./assets/whiteSquare.png" width="18%"></img>
+       </button>
+        </div>
+       </div>
+
+    <div id="footerDiv" class="layer">
+        <div>
+            <button onClick="toggleLanguageElements()"
+            id="language">
+               
+            <img src="./images/logos/language.svg" class='inactive' id="langaugeIcon"></img>
+            </button>
+              <ul id="languageList" class="ULinactive">
+                    <li><button onClick="updateLanguage('English')">🇺🇸 English</button></li>
+                    <li><button onClick="updateLanguage('Spanish')">🇪🇸 Español</button></li>
+                    <li><button onClick="updateLanguage('Hmong')">🇱🇦 Hmoob</button></li>
+                    <li><button onClick="updateLanguage('Arabic')">🇸🇦 العربية (Arabic)</button></li>
+                    <li><button onClick="updateLanguage('Somali')">🇸🇴 Soomaali</button></li>
+                    <li><button onClick="updateLanguage('Burmese')">🇲🇲 မြန်မာစာ (Burmese)</button></li>
+                    <li><button onClick="updateLanguage('Chinese')">🇨🇳 中文 (Mandarin)</button></li>
+                    <li><button onClick="updateLanguage('Serbo-Croatian')">🇷🇸 Српскохрватски (Serbo-Croatian)</button></li>
+                    <li><button onClick="updateLanguage('Vietnamese')">🇻🇳 Tiếng Việt</button></li>
+                    <li><button onClick="updateLanguage('Russian')">🇷🇺 Русский (Russian)</button></li>
+                    <li><button onClick="updateLanguage('Lao')">🇱🇦 ລາວ (Lao)</button></li>
+                    <li><button onClick="updateLanguage('French')">🇫🇷 Français</button></li>
+                    <li><button onClick="updateLanguage('Tagalog')">🇵🇭 Tagalog</button></li>
+                    <li><button onClick="updateLanguage('German')">🇩🇪 Deutsch</button></li>
+                    <li><button onClick="updateLanguage('Korean')">🇰🇷 한국어 (Korean)</button></li>
+                    <li><button onClick="updateLanguage('Amharic')">🇪🇹 አማርኛ (Amharic)</button></li>
+                    <li><button onClick="updateLanguage('Swahili')">🇰🇪 Kiswahili</button></li>
+                    <li><button onClick="updateLanguage('Nepali')">🇳🇵 नेपाली (Nepali)</button></li>
+                    <li><button onClick="updateLanguage('Kinyarwanda')">🇷🇼 Ikinyarwanda</button></li>
+                    <li><button onClick="updateLanguage('Urdu')">🇵🇰 اردو (Urdu)</button></li>
+                    <li> <button></button></li>
+          </div>
+      </div>
+  </div>
+
+</body>

@@ -1,0 +1,94 @@
+#langaugeIcon{
+    transition: 0.7s;
+  }
+  
+  .active {
+    transition: 0.7s;
+    filter: invert(25%) sepia(100%) saturate(1000%) hue-rotate(190deg); /* Dark blue effect */
+    animation: tiltDrop 1s ease-in-out;
+  }
+
+  .inactive {
+    transition: 0.7s;
+  }
+
+  #language {
+    position: absolute;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    width: 15vw;
+    height: 15vw;
+    float: right;
+    right: 83vw;
+    bottom: 4vh;
+    padding: 1.2%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: fill 0.7s ease;
+    z-index:201;
+  }
+
+  @keyframes tiltDrop {
+    0% {
+      transform: rotate(0deg); /* Start at the normal position */
+    }
+    50% {
+      transform: rotate(-20deg); /* Tilt the image upwards */
+    }
+    100% {
+      transform: rotate(0deg); /* Quickly drop back to the original position */
+    }
+  }
+
+  /* Styling the dropdown menu */
+ul {
+    border-radius: 3vw;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    bottom: 4vh; /* Position the dropdown above the button */
+    left: 7%;
+    width: 30%;
+    background-color: white;
+    opacity: 0;
+    transition: 0.7s ease; /* Smooth transition */
+    transform: translateY(30%); /* Initially hidden */
+    z-index: -20; /* Ensure dropdown is above other content */
+  }
+  
+  /* Show the dropdown when the button is clicked */
+  .ulactive {
+    opacity: 1;
+    transform: translateY(0); /* Brings the dropdown into view */
+    z-index: 200;
+  }
+  
+  /* Styling each item inside the dropdown */
+  ul li {
+    list-style: none;
+    text-align: left;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f1f1;
+    text-decoration: none;
+    color: black;
+  }
+  li button {
+    font-size: 1vh;
+    border: none;
+    background-color: rgb(0,0,0,0);
+    width: 100%;
+    height: 3vh;
+    text-align: right;
+    padding-right: 2vw;
+  }
+  
+  /* Alternating colors for list items */
+  ul li:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  ul li:nth-child(odd) {
+    background-color: #e6e6e6;
+  }

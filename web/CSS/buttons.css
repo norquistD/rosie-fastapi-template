@@ -1,0 +1,126 @@
+
+#buttonGrid {
+    position: absolute;
+bottom: 2%;
+ width: 60vw;
+ height: 13vh;
+ display: flex;
+ justify-content: space-around;
+ align-items: center;
+ 
+}
+
+#buttonGrid button {
+    position: absolute;
+    border-radius: 2vw;
+    border: none;
+    transition: 1s ease-in-out; /* Transition applied to opacity */
+    opacity: 0;
+    transform: translateY(30%);
+    z-index:0;
+}
+
+#buttonGrid button.activeButton {
+    z-index: 10;
+    opacity: 1;
+    transform: translateY(0%);
+}
+
+#buttonGrid button.inactiveButton {
+    opacity: 0;
+    transform: translateY(30%);
+}
+
+#prompt {
+width: 60vw;
+height: 13vh;
+font-size: 5vh;
+}
+
+#leftPrompt {
+    border-right:0.4vw solid #dfdfdf !important;
+    border-top-right-radius: 0px !important;
+    border-bottom-right-radius: 0px !important;
+    right: 30vw;
+    width: 30vw;
+    height: 13vh;
+    font-size: 2vh;
+} 
+#rightPrompt {
+    border-left:0.4vw solid #dfdfdf;
+    border-top-left-radius: 0px !important;
+    border-bottom-left-radius: 0px !important;
+    left: 30vw;
+    width: 30vw;
+    height: 13vh;
+    font-size: 2vh;
+}
+
+#trueButton {
+    border-top-right-radius: 0px !important;
+    border-bottom-right-radius: 0px !important;
+    right: 30vw;
+    width: 30vw;
+    height: 13vh;
+    font-size: 5vh;
+    background-color: green;
+}
+
+#falseButton {
+    border-top-left-radius: 0px !important;
+    border-bottom-left-radius: 0px !important;
+    left: 30vw;
+    width: 30vw;
+    height: 13vh;
+    font-size: 5vh;
+    background-color: red;
+}
+
+#buttonA {
+    border-top-right-radius: 0px !important;
+    border-bottom-right-radius: 0px !important;
+    border-bottom-left-radius: 0px !important;
+    bottom: 6.5vh;
+    right: 30vw;
+    width: 30vw;
+    height: 6.5vh;
+    font-size: 2vh;
+    background-color: red;
+}
+#buttonB {
+    border-top-left-radius: 0px !important;
+    border-bottom-right-radius: 0px !important;
+    border-bottom-left-radius: 0px !important;
+    bottom: 6.5vh;
+    left: 30vw;
+    width: 30vw;
+    height: 6.5vh;
+    font-size: 2vh;
+    background-color: rgb(74, 119, 255);
+}
+#buttonC {
+    border-top-left-radius: 0px !important;
+    border-bottom-right-radius: 0px !important;
+    border-top-right-radius: 0px !important;
+    top: 6.5vh;
+    right: 30vw;
+    width: 30vw;
+    height: 6.5vh;
+    font-size: 2vh;
+    background-color: rgb(252, 237, 29);
+}
+#buttonD {
+    border-top-left-radius: 0px !important;
+    border-bottom-left-radius: 0px !important;
+    border-top-right-radius: 0px !important;
+    top: 6.5vh;
+    left: 30vw;
+    width: 30vw;
+    height: 6.5vh;
+    font-size: 2vh;
+    background-color: rgb(43, 255, 152);
+}
+
+#buttonDSymbol {
+    transform: rotate(45deg);
+}
