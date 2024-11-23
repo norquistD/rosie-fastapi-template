@@ -80,3 +80,11 @@ async def startup_event():
     logger.info(
         f"Running {get_settings().APP_NAME} on: https://dh-ood.hpc.msoe.edu{get_settings().BASE_URL}"
     )
+
+@app.options("/{path:path}")
+async def handle_options(path: str):
+    response = JSONResponse(status_code=204)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = ["GET, POST, OPTIONS"]
+    response.headers["Access-Control-Allow-Headers"] = ["Authorization, Content-Type"]
+    return response
