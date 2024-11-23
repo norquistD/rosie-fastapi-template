@@ -11,18 +11,19 @@ let audioChunks = []; // To store audio data
 let isRecording = false; // To track recording state
 
 //API Stuff
+const base_url = "https://dh-ood.hpc.msoe.edu/node/dh-node5.hpc.msoe.edu/32573/";
 // API endpoint
-const url = "https://dh-ood.hpc.msoe.edu/node/dh-node1.hpc.msoe.edu/12235/translate";
+const url = "translate";
  
 const password = 'password';
  
 const body = {
-  'text': 'Hello',
-  'language': 'Russian'
+  text: 'Hello',
+  language: 'Russian'
 }
 
 const headers = {
-    'APIToken': 'Bearer ' + password
+    APIToken: 'Bearer ' + password
 };
  
 // Basic auth credentials
@@ -30,7 +31,7 @@ const username = 'norquistd';
 const passwordAuth = 'aKBRVBpGmQx';
  
 // Make the POST request
-axios.post(url, body, {
+axios.post(base_url + url, body, {
     auth: {
         username: username,
         password: passwordAuth

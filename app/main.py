@@ -16,8 +16,8 @@ app = FastAPI(
 )
 
 origins = [
-    'http' + get_settings().BASE_URL.removeprefix('https'),
-    get_settings().BASE_URL,
+    'https://dh-ood.hpc.msoe.edu/node' + ('http' + get_settings().BASE_URL.removeprefix('https')),
+    'https://dh-ood.hpc.msoe.edu/node' + get_settings().BASE_URL,
     "http://localhost",
     "http://localhost:8080",
 ]
