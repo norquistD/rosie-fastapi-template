@@ -15,9 +15,16 @@ app = FastAPI(
     redirect_slashes=True,
 )
 
+origins = [
+    'http' + get_settings().BASE_URL.removeprefix('https'),
+    get_settings().BASE_URL,
+    "http://localhost",
+    "http://localhost:8080",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

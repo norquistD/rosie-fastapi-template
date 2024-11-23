@@ -26,7 +26,7 @@ async def root() -> JSONResponse:
         status_code=200, content={"message": f"Welcome to the Rosie FastAPI Template {get_settings().APP_VERSION}"}
     )
 
-@api_router.post("/translate")
+@api_router.post("/translate/something")
 async def translate(request: Request) -> JSONResponse:
     # For GET requests, the text and language are retrieved as query parameters
     text = request.query_params.get('text', None)

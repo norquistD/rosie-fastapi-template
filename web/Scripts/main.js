@@ -12,10 +12,15 @@ let isRecording = false; // To track recording state
 
 //API Stuff
 // API endpoint
-const url = "https://dh-ood.hpc.msoe.edu/node/dh-node1.hpc.msoe.edu/12235/get-experiences";
+const url = "https://dh-ood.hpc.msoe.edu/node/dh-node1.hpc.msoe.edu/12235/translate";
  
 const password = 'password';
  
+const body = {
+  'text': 'Hello',
+  'language': 'Russian'
+}
+
 const headers = {
     'APIToken': 'Bearer ' + password
 };
@@ -25,7 +30,7 @@ const username = 'norquistd';
 const passwordAuth = 'aKBRVBpGmQx';
  
 // Make the POST request
-axios.get(url, {
+axios.post(url, body, {
     auth: {
         username: username,
         password: passwordAuth
