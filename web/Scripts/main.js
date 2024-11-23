@@ -4,6 +4,7 @@
 var Language = "English";
 var mode = 0;
 var correct_answer;
+history = [{"role": "system", "content": "You are a helpful assistant for a children meseum."}];
 
 //Audio globals
 let mediaRecorder; // To manage the recording state
@@ -12,26 +13,25 @@ let isRecording = false; // To track recording state
 
 //API Stuff
 // API endpoint
-const url = "https://dh-ood.hpc.msoe.edu/node/dh-node1.hpc.msoe.edu/12235/get-experiences";
+const url = "http://localhost:8080/translate";
  
 const password = 'password';
  
 const headers = {
     'APIToken': 'Bearer ' + password
 };
+
+const body = {
+  text: "Help I ned to tranlate this!",
+  language: "Spanish"
+}
  
 // Basic auth credentials
 const username = 'norquistd';
 const passwordAuth = 'aKBRVBpGmQx';
  
 // Make the POST request
-axios.get(url, {
-    auth: {
-        username: username,
-        password: passwordAuth
-    },
-    headers: headers
-})
+axios.post(url, body)
 .then(response => {
     console.log("Status Code:", response.status);
     console.log("Content-Type:", response.headers['content-type']);
@@ -135,14 +135,16 @@ document.addEventListener('DOMContentLoaded', function() {
           // Create an audio blob and URL for playback
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
           const audioUrl = URL.createObjectURL(audioBlob);
-          
-          // Optional: Create an audio element to play the recording
-          const audio = document.createElement('audio');
-          audio.src = audioUrl;
-          audio.controls = true;
-          document.body.appendChild(audio);
-  
-          // Reset chunks for the next recording
+          const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
+
+            transcripeFile(audioFile)
+           .then((transcript) => { addTranscript(transcript.transcription);
+              history[history.length + 1] = {"role": "user", 
+                "content" : transcript.transcription}
+                generateResponce();
+              }
+             ) // Handle async function
+          .catch((error) => console.error("Error in transcription:", error));
           audioChunks = [];
         };
         
@@ -503,4 +505,58 @@ function quizAnswerMC(sent, me){
     me.style.opacity = 0;
   }
 }
+
+async function translate(text){
+  const url = "http://localhost:8080/translate";
+
+  const body = {
+    text: text,
+    language: Language
+  }
+  try {
+    await axios.post(url, body).then(response => { // Wait for the response
+    return response.data}); // Return the response data
+  } catch (error) {
+    console.error("Error in postData:", error);
+    throw error; // Re-throw the error so the caller can handle it
+  }
+}
+
+async function transcripeFile(audioFile) {
+  const url = "http://localhost:8080/audio-to-text";
+
+  // Create a FormData object and append the file
+  const formData = new FormData();
+  formData.append("file", audioFile, audioFile.name); // Ensure the file is appended with a proper name
+
+  try {
+    // Make the POST request
+    const response = await axios.post(url, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data", // Explicitly set the Content-Type
+      },
+    });
+
+    // Log and return the response data
+    console.log("Response data:", response.data);
+    return response.data;
+  } catch (error) {
+    // Log detailed error information for debugging
+    console.error("Error in transcripeFile:", error);
+    throw error;
+  }
+}
+
+async function generateResponce(){
+console.log(history);
+  try {
+    await axios.post(url, json=history).then(response => { // Wait for the response
+      console.log(response);
+    return response.data}); // Return the response data
+  } catch (error) {
+    console.error("Error in postData:", error);
+    throw error; // Re-throw the error so the caller can handle it
+  }
+}
+
 
