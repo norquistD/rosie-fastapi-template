@@ -20,7 +20,11 @@ class Settings(BaseSettings):
     )
 
     ENVIRONMENT: str = "Rosie"
-    MODEL: str = "gpt-4o-mini"
+    COMPLETIONS_MODEL: str = "gpt-4o-mini"
+    AUDIO_MODEL:str = "whisper-1"
+    TTS_MODEL: str = "tts-1"
+    TTS_MODEL_VOICE: str = "fable"
+    OPENAI_API_KEY: str = ""
     DEVICE: str = "cuda"
     BASE_URL: str = ""
 

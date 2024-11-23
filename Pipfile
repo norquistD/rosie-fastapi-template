@@ -9,6 +9,7 @@ pydantic-settings = "*"
 fastapi-cors = "*"
 asyncpg = "*"
 openai = "*"
+pandas = "*"
 
 [dev-packages]
 black = "*"
