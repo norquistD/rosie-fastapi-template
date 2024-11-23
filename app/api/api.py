@@ -148,16 +148,34 @@ async def continue_chat(history: List[Message] = Body(...)):
 
 # Chat continuation endpoint
 @api_router.post("/generate-quiz")
-async def continue_chat(experience: str = Body(..., embed=True)):
+async def generate_quiz(experience: str = Body(..., embed=True), quiz_type: str = Body(..., embed=True)):
     experiences = pd.read_json('app/api/exhibits.json')
 
     experience = experiences[experiences['ExperienceName'] == experience]
 
     experience_dict = experience.to_dict(orient='records')
 
-    quiz = await generate_quiz(experience_dict[0], AsyncOpenAI(api_key=get_settings().OPENAI_API_KEY))
+    quiz = await create_quiz(experience_dict[0], quiz_type, AsyncOpenAI(api_key=get_settings().OPENAI_API_KEY))
+    quiz['quiz_type'] = quiz_type
 
     return JSONResponse(status_code=200, content=quiz)
+
+# Chat continuation endpoint
+@api_router.post("/get-experiences")
+async def get_experiences():
+    # Load the JSON file
+    experiences = pd.read_json('app/api/exhibits.json')
+
+    # Convert to a dictionary
+    experiences_dict = experiences.to_dict(orient="records")
+
+    # Serialize while handling NaN values
+    response_content = JSONResponse(status_code=200, content=[
+        {k: (v if pd.notna(v) else None) for k, v in item.items()}
+        for item in experiences_dict
+    ])
+
+    return response_content
 
 # Include the example router
 api_router.include_router(example.router)

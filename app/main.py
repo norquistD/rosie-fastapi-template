@@ -1,6 +1,6 @@
 from fastapi import FastAPI, status, Form
 from fastapi.responses import Response, HTMLResponse, RedirectResponse, JSONResponse
-
+from fastapi.middleware.cors import CORSMiddleware
 from api.api import api_router
 from core.logger import logger
 from core.settings import get_settings
@@ -14,8 +14,15 @@ app = FastAPI(
     root_path=get_settings().BASE_URL,
     redirect_slashes=True,
 )
-app.add_middleware(TokenValidationMiddleware)
 
+app.add_middleware(TokenValidationMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Default ping endpoint to check if app is running
 @app.get("/ping/", tags=["admin"])

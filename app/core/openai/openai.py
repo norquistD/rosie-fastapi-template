@@ -114,13 +114,13 @@ async def sound_like_speaker(text: str, speaker: str, asyncClient: AsyncOpenAI):
 
     return conversion['converted_sentence']
 
-async def generate_quiz(experience: str, asyncClient: AsyncOpenAI):
+async def create_quiz(experience: str, quiz_type: str, asyncClient: AsyncOpenAI):
     # Define the quiz function
     quiz_tool = {
         "type": "function",
         "function": {
             "name": "quiz_definition",
-            "description": f"Identifies informaiton relating to a quiz which could be true/false or multiple choice",
+            "description": f"Identifies informaiton relating to a quiz which is {quiz_type}",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -135,16 +135,12 @@ async def generate_quiz(experience: str, asyncClient: AsyncOpenAI):
                         "type": "string",
                         "description": "The correct answer to the questions generated"
                     },
-                    "quiz_type": {
-                        "type": "string",
-                        "description": "Either true/false or multiple choice"
-                    },
                     "question": {
                         "type": "string",
                         "description": "The question being asked"
                     }
                 },
-                "required": ["answers", "correct_answer", "quiz_type", "question"]
+                "required": ["answers", "correct_answer", "question"]
             }
         }
     }
@@ -153,7 +149,7 @@ async def generate_quiz(experience: str, asyncClient: AsyncOpenAI):
     messages = [
         {
             "role": "system",
-            "content": "You are a quiz generator. You can either generate a true/false or multiple choice quiz. You are making quizzes for Discovery World Milwaukee. Try to make your question related to exhibit or Copy/MoreCopy while also taking in account for the intended age."
+            "content": f"You are a quiz generator. You can either generate a {quiz_type} quiz. You are making quizzes for Discovery World Milwaukee. Try to make your question related to exhibit or Copy/MoreCopy while also taking in account for the intended age."
         },
         {
             "role": "user",

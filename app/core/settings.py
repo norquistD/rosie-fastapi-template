@@ -16,24 +16,24 @@ class Settings(BaseSettings):
     APP_NAME: str = "Discovery World Hackathon API"
     APP_VERSION: str = "0.1.0"
     APP_DESC: str = (
-        """This is a FastApi that uses a template for building APIs on ROSIE, the MSOE supercomputer.
-        This Api for was created during a hackathon with Discovery World to increase inclusivity and accesibily.
-        It features are used to foster better translation, accessibility, and engagement:
-            - Translation into any language
-                - Text to Speech Translation
-                - Speech to Speech Translation
-                - Speech to Text Translation
-            - Formating Text to fit Environment
-                - Converts text to sound like a specified speaker
-            - Quiz Generation
-                - True or False Quizzes
-                - Multiple Choice Quizzes
-            - Chatting (In Developement)
-                - Answering Questions about Discovery World or that Experience's Topic
+        """\n\n
+    This is a FastApi that uses a template for building APIs on ROSIE, the MSOE supercomputer.\n
+    This Api for was created during a hackathon with Discovery World to increase inclusivity and accessibility.\n
+    It features are used to foster better translation, accessibility, and engagement:\n
+        - Translation into any language\n
+            - Text to Speech Translation\n
+            - Speech to Speech Translation\n
+            - Speech to Text Translation\n
+        - Formating Text to fit Environment\n
+            - Converts text to sound like a specified speaker\n
+        - Quiz Generation\n
+            - True or False Quizzes\n
+            - Multiple Choice Quizzes\n
+        - Chatting (In Developement)\n
+            - Answering Questions about Discovery World or that Experience's Topic\n
 
-        Discovery World Hackathon API Developed by: Dylan Norquist and Zander Ede - 2024
-        FastApi Template Developed by: Adam Haile - 2024
-        """
+    Discovery World Hackathon API Developed by: Dylan Norquist and Zander Ede - 2024
+    FastApi Template Developed by: Adam Haile - 2024"""
     )
 
     # OpenAI Models being used
