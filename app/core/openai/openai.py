@@ -55,8 +55,6 @@ async def translate_to_language(text: str, language: str, asyncClient: AsyncOpen
     
     translation = json.loads(res.choices[0].message.tool_calls[0].function.arguments)
 
-    print(translation)
-
     return translation['translated_language']
 
 async def sound_like_speaker(text: str, speaker: str, asyncClient: AsyncOpenAI):

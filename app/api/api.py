@@ -1,10 +1,8 @@
 from io import BytesIO
 from typing import List
-from fastapi import APIRouter, Body, Request, HTTPException, File, UploadFile
+from fastapi import APIRouter, Body, HTTPException, File, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from openai import AsyncOpenAI
-from routes import example
-from core.database.psql import *
 from core.openai.openai import *
 from core.settings import *
 from pydantic import BaseModel
@@ -15,7 +13,7 @@ class Message(BaseModel):
     content: str
 
 # Create an instance of the APIRouter class
-api_router = APIRouter(tags=['discovery-world'])
+api_router = APIRouter(prefix='/discovery-world', tags=['discovery-world'])
 
 # This is both a GET and a POST because the Rosie OOD performs a POST request by
 # default to supply the API token in the body, not in the query parameters, including
@@ -23,21 +21,11 @@ api_router = APIRouter(tags=['discovery-world'])
 @api_router.api_route("/", methods=["GET", "POST"], include_in_schema=False)
 async def root() -> JSONResponse:
     return JSONResponse(
-        status_code=200, content={"message": f"Welcome to the Rosie FastAPI Template {get_settings().APP_VERSION}"}
+        status_code=200, content={"message": f"Welcome to the Rosie FastAPI Template {get_settings().APP_VERSION} '{get_settings().BASE_URL}'"}
     )
 
-@api_router.post("/translate/something")
-async def translate(request: Request) -> JSONResponse:
-    # For GET requests, the text and language are retrieved as query parameters
-    text = request.query_params.get('text', None)
-    language = request.query_params.get('language', None)
-
-    # If it's a POST request, check if the text and language are in the body
-    if request.method == "POST":
-        body = await request.json()
-        text = body.get('text', text)
-        language = body.get('language', language)
-
+@api_router.api_route("/translate", methods=["GET", "POST"])
+async def translate(text: str = Body(..., embed=True), language: str = Body(..., embed=True)) -> JSONResponse:
     # Ensure both text and language are provided
     if not text or not language:
         raise HTTPException(status_code=400, detail="Both 'text' and 'language' parameters are required")
@@ -51,18 +39,8 @@ async def translate(request: Request) -> JSONResponse:
         status_code=200, content={"translated_text": translation}
     )
 
-@api_router.post("/sound-like")
-async def sound_like(request: Request) -> JSONResponse:
-    # For GET requests, the text and speaker are retrieved as query parameters
-    text = request.query_params.get('text', None)
-    speaker = request.query_params.get('speaker', None)
-
-    # If it's a POST request, check if the text and language are in the body
-    if request.method == "POST":
-        body = await request.json()
-        text = body.get('text', text)
-        speaker = body.get('speaker', speaker)
-
+@api_router.api_route("/sound-like", methods=["GET", "POST"])
+async def sound_like(text: str = Body(..., embed=True), speaker: str = Body(..., embed=True)) -> JSONResponse:
     # Ensure both text and language are provided
     if not text or not speaker:
         raise HTTPException(status_code=400, detail="Both 'text' and 'speaker' parameters are required")
@@ -77,7 +55,7 @@ async def sound_like(request: Request) -> JSONResponse:
     )
 
 # Audio-to-Text endpoint
-@api_router.post("/audio-to-text")
+@api_router.api_route("/audio-to-text", methods=["GET", "POST"])
 async def audio_to_text(file: UploadFile = File(...)):
     contents = await file.read()
 
@@ -93,7 +71,7 @@ async def audio_to_text(file: UploadFile = File(...)):
     )
 
 # Text-to-Audio endpoint
-@api_router.post("/text-to-audio")
+@api_router.api_route("/text-to-audio", methods=["GET", "POST"])
 async def text_to_audio(text: str = Body(..., embed=True)):
     # Set up OpenAI API key
     asyncClient = AsyncOpenAI(api_key=get_settings().OPENAI_API_KEY)
@@ -121,7 +99,7 @@ async def text_to_audio(text: str = Body(..., embed=True)):
         raise HTTPException(status_code=500, detail=f"Error generating audio: {str(e)}")
 
 # Chat continuation endpoint
-@api_router.post("/continue-chat")
+@api_router.api_route("/continue-chat", methods=["GET", "POST"])
 async def continue_chat(history: List[Message] = Body(...)):
     # Set up OpenAI API key
     asyncClient = AsyncOpenAI(api_key=get_settings().OPENAI_API_KEY)
@@ -147,7 +125,7 @@ async def continue_chat(history: List[Message] = Body(...)):
         raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}")
 
 # Chat continuation endpoint
-@api_router.post("/generate-quiz")
+@api_router.api_route("/generate-quiz", methods=["GET", "POST"])
 async def generate_quiz(experience: str = Body(..., embed=True), quiz_type: str = Body(..., embed=True)):
     experiences = pd.read_json('app/api/exhibits.json')
 

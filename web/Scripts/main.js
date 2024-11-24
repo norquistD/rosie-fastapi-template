@@ -1,5 +1,3 @@
-
-
 //Global varibles
 var Language = "English";
 var mode = 0;
@@ -10,58 +8,67 @@ let mediaRecorder; // To manage the recording state
 let audioChunks = []; // To store audio data
 let isRecording = false; // To track recording state
 
-//API Stuff
-const base_url = "https://dh-ood.hpc.msoe.edu/node/dh-node5.hpc.msoe.edu/32573/";
-// API endpoint
-const url = "translate";
- 
-const password = 'password';
- 
-const body = {
-  text: 'Hello',
-  language: 'Russian'
-}
+// const base_url = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/2642/discovery-world/translate";
+// const password = 'password';
 
-const headers = {
-    APIToken: 'Bearer ' + password
-};
- 
-// Basic auth credentials
-const username = 'norquistd';
-const passwordAuth = 'aKBRVBpGmQx';
- 
-// Make the POST request
-axios.post(base_url + url, body, {
-    auth: {
-        username: username,
-        password: passwordAuth
-    },
-    headers: headers
-})
-.then(response => {
-    console.log("Status Code:", response.status);
-    console.log("Content-Type:", response.headers['content-type']);
-    console.log("Response Content:", response.data);
- 
-    // Attempt to parse the response as JSON
+// const body = {
+//     text: 'Hello',
+//     language: 'Russian'
+// };
+
+// const username = 'norquistd';
+// const passwordAuth = 'aKBRVBpGmQx';
+
+// const headers = new Headers({
+//     "Content-Type": "application/json",
+//     "Authorization": "Basic " + btoa(`${username}:${password}`),
+// });
+const express = require("express");
+const axios = require("axios");
+
+const app = express();
+const PORT = 3000;
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// Proxy route for translation
+app.post("/proxy/translate", async (req, res) => {
     try {
-        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
-        console.log("JSON Response:", data);
+        // Extract data from the incoming request
+        const { text, language } = req.body;
+
+        // Define the target API endpoint
+        const apiUrl = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/2642/discovery-world/translate";
+
+        // Make the API call using Axios
+        const response = await axios.post(
+            apiUrl,
+            { text, language },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: "Basic bm9ycXVpc3RkOmFLQlJWQnBHbVF4", // Base64 for 'norquistd:aKBRVBpGmQx'
+                },
+            }
+        );
+
+        // Forward the response to the client
+        res.status(response.status).json(response.data);
     } catch (error) {
-        console.log("Failed to parse JSON. Response might not be in JSON format.");
-    }
-})
-.catch(error => {
-    if (error.response) {
-        console.log("Status Code:", error.response.status);
-        console.log("Content-Type:", error.response.headers['content-type']);
-        console.log("Response Content:", error.response.data);
-    } else {
-        console.log("Error:", error.message);
+        // Handle errors and send appropriate responses
+        if (error.response) {
+            res.status(error.response.status).json(error.response.data);
+        } else {
+            res.status(500).json({ error: error.message });
+        }
     }
 });
 
-
+// Start the proxy server
+app.listen(PORT, () => {
+    console.log(`Proxy server running on http://localhost:${PORT}`);
+});
 
 //Test quiz varible
 const testQuizData = {
