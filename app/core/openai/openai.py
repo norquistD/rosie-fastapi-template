@@ -25,6 +25,24 @@ async def translate_to_language(text: str, language: str, asyncClient: AsyncOpen
             }
         }
     }
+    bad_language_filter_tool = {
+        "type": "function",
+        "function": {
+            "name": "bad_language_filter",
+            "description": f"Indentifies swear words, slurs, and other bad words not suitable for children in {language}",
+            "parameters": {
+                "good_words": {
+                    "type": "string",
+                    "description": "words that are suitable for children."
+                },
+                "bad_words": {
+                    "type": "string",
+                    "description": "swear words, slurs and other bad words not suitable for children"
+                },
+                "required": ["good_words"]
+            }
+        }
+    }
 
     # Combine all instructions into a single message
     messages = [
@@ -37,14 +55,15 @@ async def translate_to_language(text: str, language: str, asyncClient: AsyncOpen
             "content": f"""Translate this into {language}:
             '{text}'
             ---
-            Use the function to return the translated text and details.
+            Use the translation_tool function to return the translated text and details.
+            After that use the bad_language_filter_tool to remove bad words and only return words suitable for children.
             """
         }
     ]
 
     res = await asyncClient.chat.completions.create(
         model=get_settings().COMPLETIONS_MODEL,
-        tools=[translation_tool],
+        tools=[translation_tool, bad_language_filter_tool],
         tool_choice="auto",
         messages=messages,
         temperature=0,       # Minimize randomness
@@ -104,7 +123,7 @@ async def sound_like_speaker(text: str, speaker: str, asyncClient: AsyncOpenAI):
         tools=[translation_tool],
         tool_choice="auto",
         messages=messages,
-        temperature=0,       # Minimize randomness
+        temperature=0.5,       # Minimize randomness
         frequency_penalty=0, # Avoid penalizing repetitions
         top_p=1,             # Include all high-probability tokens
         presence_penalty=0   # No penalty for sticking to the same topics
@@ -172,9 +191,6 @@ async def create_quiz(experience: str, quiz_type: str, asyncClient: AsyncOpenAI)
         tool_choice="auto",
         messages=messages,
         temperature=1,       # Minimize randomness
-        frequency_penalty=0, # Avoid penalizing repetitions
-        top_p=1,             # Include all high-probability tokens
-        presence_penalty=0   # No penalty for sticking to the same topics
     )
     
     quiz = json.loads(res.choices[0].message.tool_calls[0].function.arguments)
