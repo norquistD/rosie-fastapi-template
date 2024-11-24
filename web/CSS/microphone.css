@@ -1,41 +1,41 @@
 #microphone {
-    position: absolute;
-    border-radius: 50%;
-    border: none;
-    color: white;
-    width: 15vw;
-    height: 15vw;
-    float: right;
-    left: 83vw;
-    bottom: 4vh;
-    padding: 3.4%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: black;
-    transition: fill 0.7s ease;
+  position: absolute;
+  border-radius: 50%;
+  border: none;
+  color: white;
+  width: 15vw;
+  height: 15vw;
+  float: right;
+  left: 83vw;
+  bottom: 4vh;
+  padding: 3.4%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: black;
+  transition: fill 0.7s ease;
+}
+
+/* Button logos */
+#microphoneIcon{
+  transition: 0.7s;
+}
+
+.on {
+  transition: 0.7s;
+  filter: invert(34%) sepia(100%) saturate(5000%) hue-rotate(120deg); /* Green effect */
+  animation: pulse 2s ease-in-out infinite;
+}
+
+
+@keyframes pulse {
+  0% {
+    transform: scale(1); /* Start at the normal position */
   }
-  
-  /* Button logos */
-  #microphoneIcon{
-    transition: 0.7s;
+  25% {
+    transform: scale(1.1);
   }
-  
-  .on {
-    transition: 0.7s;
-    filter: invert(34%) sepia(100%) saturate(5000%) hue-rotate(120deg); /* Green effect */
-    animation: pulse 2s ease-in-out infinite;
+  75% {
+    transform: scale(0.9);
   }
-  
-  
-  @keyframes pulse {
-    0% {
-      transform: scale(1); /* Start at the normal position */
-    }
-    25% {
-      transform: scale(1.1);
-    }
-    75% {
-      transform: scale(0.9);
-    }
-  }
+}

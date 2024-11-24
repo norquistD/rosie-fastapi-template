@@ -3,7 +3,7 @@ let language = "English";
 let mode = 0;
 let correctAnswer;
 let sleepyClock = new Date();
-
+let exhibit = 'Meresamun Mummy';
 // 3 minutes reset without interaction
 const sleepTimer = 180000;
 let volume = 1;
@@ -14,7 +14,6 @@ const pendingRequests = {};
 
 // Initial prompting is done in the init function, based on current exhibit
 const history = [];
-let exhibit = "";
 const baseUrl = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/30930/discovery-world";
 
 api_password = "password"
@@ -70,6 +69,34 @@ function initializeWebSocket(url, handlers) {
 
   return socket;
 }
+
+const getExperiencesSocket = initializeWebSocket("ws://localhost:8000/ws/get-experiences", {
+	onOpen: (socket) => {
+		getExperiences();
+	},
+	onMessage: (data) => {
+		const experience = data.find(exp => exp.ExperienceName === exhibit);
+		exhibit = data.exhibit
+		console.log(data);
+		if (experience) {
+			exhibit = experience.ExperienceName;
+			console.log(experience);
+			console.log(exhibit);
+			history[history.length] = {
+				"role": "system", "content": (
+					"I would you to make your responses one or two sentences and fewer than 50 words." + 
+					"You are a helpful assistant at a children's museum, Discovery World in Milwaukee. You are mostly likley talking wiht a child whos curious about the exhibit they're at. The exhibit you're at right now is" + experience.ExperienceName + 
+					"Here is some of the signs at the  exhibit you are currentlty at: " + experience.Copy +
+					"A general decription of this exhibit is: " + experience.Description +
+					"Provide the users with fun facts, and maybe even tell them to take a quiz by clicking below if they're curious" +
+					"Discovery World has other exhibits too. Encourage users to look at other exhibits. Exhibits that are" +
+					"close together have simular topics. Here is a json of other Discover World exhibits:" + data.experiences
+				)}
+		} else {
+			console.log('Experience not found');
+		}
+	},
+});
 
 // Initialize WebSocket for Quiz
 const quizSocket = initializeWebSocket("ws://localhost:8000/ws/quiz", {
@@ -197,7 +224,6 @@ const textToSpeechSocket = initializeWebSocket("ws://localhost:8000/ws/text-to-a
 		},
 });
 textToSpeechSocket.binaryType = "arraybuffer";
-
 
 // Modified translate function
 /**
@@ -876,9 +902,11 @@ async function transcribeFile(audioFile, languageToggle) {
 async function generateResponse() {
 	spinOn();
 
+	
 	const url = `${baseUrl}/continue-chat`;
 	localStorage.setItem('history', JSON.stringify(history));
 	const storedHistory = JSON.parse(localStorage.getItem('history'));
+	
 	const payload = {
 	  history: storedHistory,
 	};
@@ -937,10 +965,28 @@ async function textToSpeech(text) {
 
 /**
  * Initializes the application based on the exhibit.
- * @param {string} exhibitInit - The exhibit to initialize.
  */
-async function init(exhibitInit) {
-  // Implementation needed based on your requirements
+async function init() {
+	addResponse("", null, "100vh");
+	addResponse("Hello! Click the microphone icon below to talk to me!", null,"5vh");
+}
+
+function getExperiences() {
+	const url = `${baseUrl}/get-experiences`;
+	const payload = {
+	  exhibit: exhibit,
+	};
+
+	console.log(payload);
+
+	const data = {
+	  endpoint: url,
+	  payload: payload,
+	  headers: headers,
+	  auth: auth
+	};
+  
+	getExperiencesSocket.send(JSON.stringify(data));
 }
 
 // frontend.js

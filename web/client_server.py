@@ -281,5 +281,31 @@ async def text_to_audio_endpoint(websocket: WebSocket):
         print(f"Error in /ws/text-to-audio: {e}")
         manager.disconnect(websocket)
 
+@app.websocket("/ws/get-experiences")
+async def text_to_audio_endpoint(websocket: WebSocket):
+    print("New connection to /ws/get-experiences")
+    await manager.connect(websocket, endpoint="get-experiences")
+    try:
+        async with httpx.AsyncClient() as client:
+            while True:
+                # Receive JSON data from client
+                data = await websocket.receive_json()
+                # print(f"Received on /ws/get-experiences: {data}")
+
+                response = await client.get(
+                    data['endpoint'],
+                    auth=(data['auth']['username'], data['auth']['password']),
+                    headers=data['headers']
+                )
+                
+                response_json = response.json()
+                await websocket.send_text(json.dumps(response_json))
+
+    except WebSocketDisconnect:
+        print("Disconnected from /ws/get-experiences")
+        manager.disconnect(websocket)
+    except Exception as e:
+        print(f"Error in /ws/get-experiences: {e}")
+        manager.disconnect(websocket)
 
 # Run this server with: `uvicorn client_server:app --reload`
