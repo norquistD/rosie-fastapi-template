@@ -1,743 +1,829 @@
 let mutex = false;
 
-//Global varibles
-var Language = "English";
-var mode = 0;
-var correct_answer;
-var sleepyClock = new Date();
-//3 min resets wihtout interaction
-var sleepTimer = 180000;
-var volume = 1;
+// Global variables
+let language = "English";
+let mode = 0;
+let correctAnswer;
+let sleepyClock = new Date();
+// 3 minutes reset without interaction
+const sleepTimer = 180000;
+let volume = 1;
 
-//reset sleep timer
-//sleepyClock = new Date();
-
-//initial prompting is done in the innit function, baed on current exhibit
+// Initial prompting is done in the init function, based on current exhibit
 const history = [];
 let exhibit = "";
-let base_url = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/1649" + "/discovery-world";
+const baseUrl = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/1649/discovery-world";
 
-//Audio globals
+api_password = "password"
+
+headers = {
+	APIToken: "Bearer " + api_password
+}
+
+auth = {
+	username: "norquistd",
+	password: "aKBRVBpGmQx"
+}
+
+// Audio globals
 let mediaRecorder; // To manage the recording state
 let audioChunks = []; // To store audio data
 let isRecording = false; // To track recording state
 
+/**
+ * Initializes a WebSocket connection with the given URL and handlers.
+ * @param {string} url - The WebSocket URL.
+ * @param {object} handlers - Event handlers for the WebSocket.
+ * @returns {WebSocket} The initialized WebSocket instance.
+ */
 function initializeWebSocket(url, handlers) {
-	const socket = new WebSocket(url);
+  const socket = new WebSocket(url);
 
-	// Handle connection open
-	socket.onopen = () => {
-		console.log(`WebSocket connection to ${url} established.`);
-		if (handlers.onOpen) {
-			handlers.onOpen(socket);
-		} 
-	};
+  socket.onopen = () => {
+    console.log(`WebSocket connection to ${url} established.`);
+    handlers.onOpen && handlers.onOpen(socket);
+  };
 
-	// Handle incoming messages
-	socket.onmessage = (event) => {
-		const data = JSON.parse(event.data);
-		console.log(`Message from ${url}:`, data);
-		if (handlers.onMessage) {
-			handlers.onMessage(data);
-		}			
-	};
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log(`Message from ${url}:`, data);
+    handlers.onMessage && handlers.onMessage(data);
+  };
 
-	// Handle connection close
-	socket.onclose = () => {
-		console.log(`WebSocket connection to ${url} closed.`);
-		if (handlers.onClose) {
-			handlers.onClose();
-		} 
-	};
+  socket.onclose = () => {
+    console.log(`WebSocket connection to ${url} closed.`);
+    handlers.onClose && handlers.onClose();
+  };
 
-	// Handle connection errors
-	socket.onerror = (error) => {
-		console.error(`WebSocket error on ${url}:`, error);
-		if (handlers.onError) {
-			handlers.onError(error);
-		}
-	};
+  socket.onerror = (error) => {
+    console.error(`WebSocket error on ${url}:`, error);
+    handlers.onError && handlers.onError(error);
+  };
 
-	return socket;
+  return socket;
 }
 
 // Initialize WebSocket for Quiz
 const quizSocket = initializeWebSocket("ws://localhost:8000/ws/quiz", {
-	onMessage: async (data) => {
-			mode = 4;
-			setMode();
-			//Make Api call
-			if (Language === "English") {
-				correct_answer = data.correct_answer;
-				for (i = 0; i < 20; i++) {
-					addResponse("");
-				}
-				addResponse(data.question);
-			} else {
-				try {
-					// Wait for getQuizTF() to resolve
-					const response = data;
-		
-					// Wait for both translations to resolve
-					correct_answer = responce.correct_answer;
-					const question = await translate(response.question);
-		
-					// Add translated responses
-					addResponse(question);
-				} catch (error) {
-					console.error("Error in quizBeginTF:", error);
-				}
+  onMessage: async (data) => {
+    mode = data.quiz_type == "true/false" ? 4 : 5;
+    setMode();
+    if (language == "English") {
+		if (mode == 4) {
+			correctAnswer = data.correct_answer;
+			for (let i = 0; i < 20; i++) {
+				addResponse("");
 			}
-			spinOff();
-		},
-	});
+			addResponse(data.question);
+		} else {
+			const question = data.question;
+			const answers = shuffleArray(data.answers);
+			
+			correctAnswer = answers.indexOf(data.correct_answer);
+			console.log(correctAnswer)
+			for (let i = 0; i < 20; i++) {
+				addResponse("");
+			}
+
+			// Add responses with unique images
+			addResponse(answers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
+			addResponse(answers[2], createImageElement("./assets/whiteCircle.png"));
+			addResponse(answers[1], createImageElement("./assets/whiteSquare.png"));
+			addResponse(answers[0], createImageElement("./assets/whiteTriangle.png"));
+		
+			// Add question as a response
+			addResponse(question);
+		}
+    } else {
+		if (mode == 4) {
+			correctAnswer = data.correct_answer;
+			const question = await translate(data.question);
+			addResponse(question);
+		} else if (mode == 5) {
+			const translatedQuestion = await translate(response.question);
+			const translatedAnswers = await Promise.all(response.answers.map(answer => translate(answer)));
+		
+			for (let i = 0; i < 18; i++) {
+				addResponse("");
+			}
+		
+			// Add translated responses with unique images
+			addResponse(translatedAnswers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
+			addResponse(translatedAnswers[2], createImageElement("./assets/whiteCircle.png"));
+			addResponse(translatedAnswers[1], createImageElement("./assets/whiteSquare.png"));
+			addResponse(translatedAnswers[0], createImageElement("./assets/whiteTriangle.png"));
+		
+			// Add translated question as a response
+			addResponse(translatedQuestion);
+		}
+    }
+
+    spinOff();
+	if (mode == 4) {
+	  // Make all buttons visible
+	  ['trueButton', 'falseButton'].forEach(id => {
+		const button = document.getElementById(id);
+		if (button) button.style.opacity = 1;
+	  });
+	} else if (mode == 5) {
+		['buttonA', 'buttonB', 'buttonC', 'buttonD'].forEach(id => {
+			const button = document.getElementById(id);
+			if (button) button.style.opacity = 1;
+		});
+	}
+  },
+});
+
+/**
+ * Randomly shuffles an array.
+ * @param {Array} array - The array to shuffle.
+ * @returns {Array} - The shuffled array.
+ */
+function shuffleArray(array) {
+	for (let i = array.length - 1; i > 0; i--) {
+	  const j = Math.floor(Math.random() * (i + 1));
+	  [array[i], array[j]] = [array[j], array[i]];
+	}
+	return array;
+  }
 
 // Initialize WebSocket for Translate
 const translateSocket = initializeWebSocket("ws://localhost:8000/ws/translate", {
-	onMessage: (data) => {
-			translateSocket.send(data)
-		},
-	});
-
-// // Send a translation request
-// function sendTranslationRequest(text, language) {
-//     const message = {
-//         type: "translate",
-//         text: text,
-//         language: language,
-//     };
-//     socket.send(JSON.stringify(message));
-// }
-
-// // Send a quiz request
-// function sendQuizRequest() {
-//     const message = {
-//         type: "quiz",
-//     };
-//     socket.send(JSON.stringify(message));
-// }
-
-document.addEventListener('DOMContentLoaded', function() {
-	particlesJS('particles-js', {
-		particles: {
-			number: {
-				value: 40, // Number of particles
-			},
-			color: {
-				value: "#ffffff", // Particle color
-			},
-			shape: {
-				type: "circle", // Shape of particles
-			},
-			opacity: {
-				value: 0.5, // Particle opacity
-			},
-			size: {
-				value: 5, // Particle size
-				"random": true,
-			},
-			move: {
-				enable: true,
-				speed: 3, // Particle speed
-				"random": true,
-			},
-			"line_linked": {
-				"enable": true,
-				"distance": 150,
-				"color": "#ffffff",
-				"opacity": 0.4,
-				"width": 1
-			}   
-		}
-	});
+  onMessage: (data) => {
+    translateSocket.send(data);
+  },
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+  particlesJS('particles-js', {
+    particles: {
+      number: { value: 40 },
+      color: { value: "#ffffff" },
+      shape: { type: "circle" },
+      opacity: { value: 0.5 },
+      size: { value: 5, random: true },
+      move: { enable: true, speed: 3, random: true },
+      line_linked: {
+        enable: true,
+        distance: 150,
+        color: "#ffffff",
+        opacity: 0.4,
+        width: 1,
+      },
+    },
+  });
+});
 
-  async function toggleMicrophoneIcon(language) {
-    const microphoneIcon = document.getElementById('microphoneIcon');
-    const otherIcon = document.getElementById('otherLanguageButton');
-    if (!microphoneIcon) {
-      console.error('Element with ID "microphoneIcon" not found.');
-      return;
-    }
-    
-    microphoneIcon.classList.toggle('on');
-    otherIcon.classList.toggle('on');
-
-    if (isRecording) {
-      // Stop the recording
-      mediaRecorder.stop();
-      isRecording = false;
-      console.log('Recording stopped');
-    } else {
-      try {
-        // Request microphone access
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        
-        mediaRecorder.ondataavailable = (event) => {
-          audioChunks.push(event.data);
-        };
-        
-        mediaRecorder.onstop = () => {
-          // Create an audio blob and URL for playback
-          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
-
-          //HERE IS WHERE TRANSCRIPTION HAPPENS
-            transcripeFile(audioFile)
-           .then((transcript) => { if(language){
-            console.log(transcript.transcription);
-              updateLanguage(transcript.transcription);
-           } else{addTranscript(transcript.transcription);
-              history[history.length] = {"role": "user", 
-                "content" : transcript.transcription}
-                generateResponce();}
-              }
-             ) // Handle async function
-          .catch((error) => console.error("Error in transcription:", error));
-          audioChunks = [];
-        };
-        
-        // Start recording
-        mediaRecorder.start();
-        isRecording = true;
-        console.log('Recording started');
-      } catch (error) {
-        console.error('Error accessing microphone:', error);
-      }
-    }
+/**
+ * Toggles the microphone icon and handles recording state.
+ * @param {boolean} languageToggle - Indicates if language is toggled.
+ */
+async function toggleMicrophoneIcon(languageToggle) {
+  const microphoneIcon = document.getElementById('microphoneIcon');
+  const otherIcon = document.getElementById('otherLanguageButton');
+  if (!microphoneIcon) {
+    console.error('Element with ID "microphoneIcon" not found.');
+    return;
   }
 
-function toggleLanguageElements() {
-	// Define the elements and their classes to toggle
-	const elements = [
-		{ id: 'langaugeIcon', class1: 'active', class2: 'inactive' },
-		{ id: 'languageList', class1: 'ulactive', class2: 'ULinactive' }
-	];
+  microphoneIcon.classList.toggle('on');
+  otherIcon.classList.toggle('on');
 
-	// Iterate through each element and toggle the classes
-	elements.forEach(({ id, class1, class2 }) => {
-		const element = document.getElementById(id);
-		if (element) {
-			if (element.classList.contains(class1)) {
-			element.classList.replace(class1, class2);
-			} else {
-			element.classList.replace(class2, class1);
-			}
-		} else {
-			console.error(`Element with ID "${id}" not found.`);
-		}
-	});
+  if (isRecording) {
+    mediaRecorder.stop();
+    isRecording = false;
+    console.log('Recording stopped');
+  } else {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
+
+        try {
+          const transcript = await transcribeFile(audioFile);
+          if (languageToggle) {
+            console.log(transcript.transcription);
+            updateLanguage(transcript.transcription);
+          } else {
+            addTranscript(transcript.transcription);
+            history.push({ role: "user", content: transcript.transcription });
+            generateResponse();
+          }
+        } catch (error) {
+          console.error("Error in transcription:", error);
+        }
+
+        audioChunks = [];
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      console.log('Recording started');
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+    }
+  }
 }
 
-async function updateLanguage(newLanguage){
-  document.getElementById("buttonA").style.opacity = 0;
-   document.getElementById("buttonB").style.opacity = 0;
-  document.getElementById("buttonC").style.opacity = 0;
-   document.getElementById("buttonD").style.opacity = 0;
-  mode=0;
+/**
+ * Toggles classes for language elements.
+ */
+function toggleLanguageElements() {
+  const elements = [
+    { id: 'languageIcon', class1: 'active', class2: 'inactive' },
+    { id: 'languageList', class1: 'ulactive', class2: 'ULinactive' },
+  ];
+
+  elements.forEach(({ id, class1, class2 }) => {
+    const element = document.getElementById(id);
+    if (element) {
+      if (element.classList.contains(class1)) {
+        element.classList.replace(class1, class2);
+      } else {
+        element.classList.replace(class2, class1);
+      }
+    } else {
+      console.error(`Element with ID "${id}" not found.`);
+    }
+  });
+}
+
+/**
+ * Updates the language of the application.
+ * @param {string} newLanguage - The new language to set.
+ */
+async function updateLanguage(newLanguage) {
+  ['buttonA', 'buttonB', 'buttonC', 'buttonD'].forEach(id => {
+    const button = document.getElementById(id);
+    if (button) button.style.opacity = 0;
+  });
+
+  mode = 0;
   setMode();
-  console.log("ping");
-  Language = newLanguage;
-  history[history.length] = {"role": "system", "content": ("The user has switched the current langauge to: " + Language)};
-  translate("Hello, I'm now speaking in " + Language + " Click the microphone icon below to talk to me!").then( words => addResponse(words, null, "3vh"));
+  console.log("Language update triggered");
+  language = newLanguage;
+  history.push({
+    role: "system",
+    content: `The user has switched the current language to: ${language}`,
+  });
+
+  const translatedMessage = await translate("Hello, I'm now speaking in " + language + ". Click the microphone icon below to talk to me!");
+  addResponse(translatedMessage, null, "3vh");
   translateButtons();
   toggleLanguageElements();
 }
 
+/**
+ * Adds the spin effect to an element.
+ */
 function spinOn() {
 	const element = document.getElementById("spins");
 	element.classList.add("spinOn");
-}
-
-function spinOff() {
+	element.style.display = "block";
+  }
+  
+  /**
+   * Removes the spin effect from an element and hides it.
+   */
+  function spinOff() {
 	const element = document.getElementById("spins");
 	element.classList.remove("spinOn");
-}
+	element.style.display = "none";
+  }
 
+/**
+ * Sets classes for various UI elements based on the current mode.
+ * @param {boolean} textBoxClass - Whether to apply the 'lower' class to the text box.
+ * @param {boolean} circle1Class - Whether to apply the 'circleTransition' class to circle1.
+ * @param {boolean} circle2Class - Whether to apply the 'circleTransition' class to circle2.
+ * @param {boolean} buttonPrompt - Whether the prompt button is active.
+ * @param {boolean} buttonPrompt2 - Whether the left prompt button is active.
+ * @param {boolean} buttonPrompt3 - Whether the right prompt button is active.
+ * @param {boolean} buttonTrue - Whether the true button is active.
+ * @param {boolean} buttonFalse - Whether the false button is active.
+ * @param {boolean} buttonA - Whether button A is active.
+ * @param {boolean} buttonB - Whether button B is active.
+ * @param {boolean} buttonC - Whether button C is active.
+ * @param {boolean} buttonD - Whether button D is active.
+ * @param {boolean} backArrowClass - Whether to show the back arrow.
+ */
 function setClassesOfElements(
-	textBoxClass, Circle1Class, Circle2Class, buttonPrompt, buttonPrompt2,
-	buttonPrompt3, buttonTrue, buttonFalse, buttonA, buttonB, buttonC, buttonD,
-	backArrowClass
+  textBoxClass,
+  circle1Class,
+  circle2Class,
+  buttonPrompt,
+  buttonPrompt2,
+  buttonPrompt3,
+  buttonTrue,
+  buttonFalse,
+  buttonA,
+  buttonB,
+  buttonC,
+  buttonD,
+  backArrowClass
 ) {
-	// Get all the necessary elements by ID
-	const textBox = document.getElementById("textBox");
-	const circle1 = document.getElementById("circleImage");
-	const circle2 = document.getElementById("circleImage2");
-	const buttonPromptEl = document.getElementById("prompt");
-	const buttonPrompt2El = document.getElementById("leftPrompt");
-	const buttonPrompt3El = document.getElementById("rightPrompt");
-	const buttonTrueEl = document.getElementById("trueButton");
-	const buttonFalseEl = document.getElementById("falseButton");
-	const buttonAEl = document.getElementById("buttonA");
-	const buttonBEl = document.getElementById("buttonB");
-	const buttonCEl = document.getElementById("buttonC");
-	const buttonDEl = document.getElementById("buttonD");
-	const backArrow = document.getElementById("backArrow");
-	// Circle 1 - Toggle .circleTransition
-	if (Circle1Class) {
-	circle1.classList.add("circleTransition");
-	circle1.classList.remove("circleImage");
-	} else {
-	circle1.classList.remove("circleTransition");
-	circle1.classList.add("circleImage");
-	}
+  const textBox = document.getElementById("textBox");
+  const circle1 = document.getElementById("circleImage");
+  const circle2 = document.getElementById("circleImage2");
+  const buttonPromptEl = document.getElementById("prompt");
+  const buttonPrompt2El = document.getElementById("leftPrompt");
+  const buttonPrompt3El = document.getElementById("rightPrompt");
+  const buttonTrueEl = document.getElementById("trueButton");
+  const buttonFalseEl = document.getElementById("falseButton");
+  const buttonAEl = document.getElementById("buttonA");
+  const buttonBEl = document.getElementById("buttonB");
+  const buttonCEl = document.getElementById("buttonC");
+  const buttonDEl = document.getElementById("buttonD");
+  const backArrow = document.getElementById("backArrow");
 
-	// Circle 2 - Toggle .circleTransition
-	if (Circle2Class) {
-	circle2.classList.add("circleTransition");
-	circle2.classList.remove("circleImage2");
-	} else {
-	circle2.classList.remove("circleTransition");
-	circle2.classList.add("circleImage2");
-	}
+  // Toggle classes for circles
+  toggleClass(circle1, circle1Class, "circleTransition", "circleImage");
+  toggleClass(circle2, circle2Class, "circleTransition", "circleImage2");
 
-	// Buttons - Toggle .activeButton and .inactiveButton
-	function toggleButtonClass(buttonElement, isActive) {
-		if (isActive) {
-			buttonElement.classList.add("activeButton");
-			buttonElement.classList.remove("inactiveButton");
-		} else {
-			buttonElement.classList.add("inactiveButton");
-			buttonElement.classList.remove("activeButton");
-		}
-	}
+  // Toggle classes for buttons
+  toggleButtonClass(buttonPromptEl, buttonPrompt);
+  toggleButtonClass(buttonPrompt2El, buttonPrompt2);
+  toggleButtonClass(buttonPrompt3El, buttonPrompt3);
+  toggleButtonClass(buttonTrueEl, buttonTrue);
+  toggleButtonClass(buttonFalseEl, buttonFalse);
+  toggleButtonClass(buttonAEl, buttonA);
+  toggleButtonClass(buttonBEl, buttonB);
+  toggleButtonClass(buttonCEl, buttonC);
+  toggleButtonClass(buttonDEl, buttonD);
 
-	toggleButtonClass(buttonPromptEl, buttonPrompt);
-	toggleButtonClass(buttonPrompt2El, buttonPrompt2);
-	toggleButtonClass(buttonPrompt3El, buttonPrompt3);
-	toggleButtonClass(buttonTrueEl, buttonTrue);
-	toggleButtonClass(buttonFalseEl, buttonFalse);
-	toggleButtonClass(buttonAEl, buttonA);
-	toggleButtonClass(buttonBEl, buttonB);
-	toggleButtonClass(buttonCEl, buttonC);
-	toggleButtonClass(buttonDEl, buttonD);
+  // Toggle class for text box
+  if (textBoxClass) {
+    textBox.classList.add("lower");
+  } else {
+    textBox.classList.remove("lower");
+  }
 
-	// Text box - Toggle .lower
-	if (textBoxClass) {
-		textBox.classList.add("lower");
-	} else {
-		textBox.classList.remove("lower");
-	}
-
-	if (backArrowClass) {	
-		backArrow.classList.add("show");
-		backArrow.classList.remove("hidden");
-	} else {
-		backArrow.classList.remove("show");
-		backArrow.classList.add("hidden");
-	}
+  // Toggle class for back arrow
+  if (backArrowClass) {
+    backArrow.classList.add("show");
+    backArrow.classList.remove("hidden");
+  } else {
+    backArrow.classList.remove("show");
+    backArrow.classList.add("hidden");
+  }
 }
 
-function setMode(){
-//reset sleep timer
-sleepyClock = new Date();
+/**
+ * Helper function to toggle classes for circles.
+ * @param {HTMLElement} element - The element to toggle classes on.
+ * @param {boolean} condition - Whether to add or remove the transition class.
+ * @param {string} addClass - The class to add.
+ * @param {string} removeClass - The class to remove.
+ */
+function toggleClass(element, condition, addClass, removeClass) {
+  if (element) {
+    if (condition) {
+      element.classList.add(addClass);
+      element.classList.remove(removeClass);
+    } else {
+      element.classList.remove(addClass);
+      element.classList.add(removeClass);
+    }
+  }
+}
 
+/**
+ * Helper function to toggle button classes.
+ * @param {HTMLElement} buttonElement - The button element.
+ * @param {boolean} isActive - Whether the button is active.
+ */
+function toggleButtonClass(buttonElement, isActive) {
+  if (buttonElement) {
+    if (isActive) {
+      buttonElement.classList.add("activeButton");
+      buttonElement.classList.remove("inactiveButton");
+    } else {
+      buttonElement.classList.add("inactiveButton");
+      buttonElement.classList.remove("activeButton");
+    }
+  }
+}
+
+/**
+ * Sets the UI mode based on the current mode value.
+ */
+function setMode() {
+  // Reset sleep timer
+  sleepyClock = new Date();
   console.log(mode);
-  //textBoxClass, Circle1Class, Circle2Class, buttonPrompt, buttonPrompt2, buttonPrompt3, buttonTrue, buttonFalse, buttonA, buttonB, buttonC, buttonD
-  if(mode == 0){
-    //Deafaut
-    setClassesOfElements(false, false, false, true, false, false, false, false, false, false, false, false, false);
-  }
-  if(mode == 1){
-    //Circle1Big
-    setClassesOfElements(true, true, false, true, false, false, false, false, false, false, false, false, false);
-  }
-  if(mode == 2){
-    //Circle2Big
-    setClassesOfElements(true, false, true, true, false, false, false, false, false, false, false, false, false);
-  }
-  //Quiz promt TF / mC
-  if(mode == 3){
-    setClassesOfElements(false, false, false, false, true, true, false, false, false, false, false, false, true);
-  }
-  //TF
-  if(mode == 4){
-    setClassesOfElements(false, false, false, false, false, false, true, true, false, false, false, false, true);
-  }
-  //MC
-  if(mode == 5){
-    setClassesOfElements(false, false, false, false, false, false, false, false, true, true, true, true, true);
+
+  switch (mode) {
+    case 0:
+      // Default
+      setClassesOfElements(false, false, false, true, false, false, false, false, false, false, false, false, false);
+      break;
+    case 1:
+      // Circle1Big
+      setClassesOfElements(true, true, false, true, false, false, false, false, false, false, false, false, false);
+      break;
+    case 2:
+      // Circle2Big
+      setClassesOfElements(true, false, true, true, false, false, false, false, false, false, false, false, false);
+      break;
+    case 3:
+      // Quiz prompt TF / MC
+      setClassesOfElements(false, false, false, false, true, true, false, false, false, false, false, false, true);
+      break;
+    case 4:
+      // True/False
+      setClassesOfElements(false, false, false, false, false, false, true, true, false, false, false, false, true);
+      break;
+    case 5:
+      // Multiple Choice
+      setClassesOfElements(false, false, false, false, false, false, false, false, true, true, true, true, true);
+      break;
+    default:
+      console.warn(`Unknown mode: ${mode}`);
   }
 }
 
-function modder(){
-	mode = (mode + 1) % 6
-	setMode(mode);
+/**
+ * Cycles through modes and adds responses.
+ */
+function modder() {
+  mode = (mode + 1) % 6;
+  setMode();
 
-	addResponse("Do you want to know whats up?");
-	addTranscript("Yes, I would");
+  addResponse("Do you want to know what's up?");
+  addTranscript("Yes, I would");
 }
 
-function addTranscript(transcript, size) {
-	if (!size) {
-		size = "1.5vh";
-	}
-
-	const textBoxContainer = document.getElementById('textBox');
-
-	if (!textBoxContainer) {
-		console.error('Element with ID "textBox" not found.');
-		return;
-	}
-
-	// Slide down existing text boxes
-	Array.from(textBoxContainer.children).forEach((child) => {
-		child.style.transition = 'transform 0.3s';
-		child.style.transform = 'translateY(20%)'; // Move existing text boxes up (change percentage to new txtbox high?)
-	});
-
-	// Create a new text box element
-	const textBox = document.createElement('p');
-	textBox.innerHTML = transcript;
-	textBox.style.cssText = `
-		width: 95%;
-		color: yellow;
-		text-align: right;
-		opacity: 0;
-		transition: 1s ease;
-		font-size:` + size + ` ;
-		float: right;
-		
-	`;
-
-	// Append the text box to the container
-	// Insert the new text box at the top of the container
-	if (textBoxContainer.firstChild) {
-		textBoxContainer.insertBefore(textBox, textBoxContainer.firstChild);
-	} else {
-		textBoxContainer.appendChild(textBox);
-	}
-
-	// Trigger fade-in effect
-	setTimeout(() => {
-		textBox.style.transform = 'translateY(0)'; // Move into place
-		textBox.style.opacity = '1';
-	}, 0);
-
-
-	// Reset positions of existing text boxes after animation
-	setTimeout(() => {
-		Array.from(textBoxContainer.children).forEach((child) => {
-		child.style.transition = 'transform 1s ease';
-		child.style.transform = 'translateY(0)';
-		});
-	}, 300); // Match the transition duration
-}
-
-function addResponse(responce, img, size){
-  //reset sleep timer
-sleepyClock = new Date();
-  if(!size){
-    size = "1.5vh";
+/**
+ * Adds a transcript to the text box.
+ * @param {string} transcript - The transcript text.
+ * @param {string} [size="1.5vh"] - The font size.
+ */
+function addTranscript(transcript, size = "1.5vh") {
+  const textBoxContainer = document.getElementById('textBox');
+  if (!textBoxContainer) {
+    console.error('Element with ID "textBox" not found.');
+    return;
   }
 
-	const textBoxContainer = document.getElementById('textBox');
-
-	if (!textBoxContainer) {
-		console.error('Element with ID "textBox" not found.');
-		return;
-	}
-
-	// Slide down existing text boxes
-	Array.from(textBoxContainer.children).forEach((child) => {
-	child.style.transition = 'transform 0.3s';
-	child.style.transform = 'translateY(20%)'; // Move existing text boxes up (change percentage to new txtbox high?)
-	});
-
-	const textBoxDiv = document.createElement('div');
+  // Slide down existing text boxes
+  Array.from(textBoxContainer.children).forEach((child) => {
+    child.style.transition = 'transform 0.3s';
+    child.style.transform = 'translateY(20%)';
+  });
 
   // Create a new text box element
   const textBox = document.createElement('p');
-  textBoxDiv.style.cssText =`
+  textBox.textContent = transcript;
+  textBox.style.cssText = `
+    width: 95%;
+    color: yellow;
+    text-align: right;
+    opacity: 0;
+    transition: 1s ease;
+    font-size: ${size};
+    float: right;
+  `;
+
+  // Insert the new text box at the top of the container
+  if (textBoxContainer.firstChild) {
+    textBoxContainer.insertBefore(textBox, textBoxContainer.firstChild);
+  } else {
+    textBoxContainer.appendChild(textBox);
+  }
+
+  // Trigger fade-in effect
+  setTimeout(() => {
+    textBox.style.transform = 'translateY(0)';
+    textBox.style.opacity = '1';
+  }, 0);
+
+  // Reset positions of existing text boxes after animation
+  setTimeout(() => {
+    Array.from(textBoxContainer.children).forEach((child) => {
+      child.style.transition = 'transform 1s ease';
+      child.style.transform = 'translateY(0)';
+    });
+  }, 300);
+}
+
+/**
+ * Adds a response to the text box.
+ * @param {string} response - The response text.
+ * @param {HTMLElement|null} img - An optional image element.
+ * @param {string} [size="1.5vh"] - The font size.
+ */
+function addResponse(response, img = null, size = "1.5vh") {
+  // Reset sleep timer
+  sleepyClock = new Date();
+
+  const textBoxContainer = document.getElementById('textBox');
+  if (!textBoxContainer) {
+    console.error('Element with ID "textBox" not found.');
+    return;
+  }
+
+  // Slide down existing text boxes
+  Array.from(textBoxContainer.children).forEach((child) => {
+    child.style.transition = 'transform 0.3s';
+    child.style.transform = 'translateY(20%)';
+  });
+
+  const textBoxDiv = document.createElement('div');
+  textBoxDiv.style.cssText = `
     width: 95%;
     color: white;
     text-align: left;
     opacity: 0;
     transition: 1s ease;
-    font-size: ` + size + ` ;
+    font-size: ${size};
     float: left;
     display: flex;
     flex-direction: row;
     align-items: center;
   `;
-  if(img != null){
-    console.log(img)
+
+  if (img) {
+    console.log(img);
     textBoxDiv.appendChild(img);
   }
-  textBoxDiv.appendChild(textBox)
 
+  const textBox = document.createElement('p');
+  textBoxDiv.appendChild(textBox);
 
-	// Append the text box to the container
-	// Insert the new text box at the top of the container
-	if (textBoxContainer.firstChild) {
-		textBoxContainer.insertBefore(textBoxDiv, textBoxContainer.firstChild);
-	} else {
-		textBoxContainer.appendChild(textBoxDiv);
-	}
+  // Insert the new text box at the top of the container
+  if (textBoxContainer.firstChild) {
+    textBoxContainer.insertBefore(textBoxDiv, textBoxContainer.firstChild);
+  } else {
+    textBoxContainer.appendChild(textBoxDiv);
+  }
 
+  // Trigger fade-in effect and type text
+  setTimeout(() => {
+    textBox.style.transform = 'translateY(0)';
+    textBoxDiv.style.opacity = '1';
+    typeText(textBox, response);
+  }, 0);
 
-	// Trigger fade-in effect
-	setTimeout(() => {
-		textBox.style.transform = 'translateY(0)'; // Move into place
-		textBoxDiv.style.opacity = '1';
-		typeText(textBox, responce);
-	}, 0);
-
-	// Reset positions of existing text boxes after animation
-	setTimeout(() => {
-		Array.from(textBoxContainer.children).forEach((child) => {
-			child.style.transition = 'transform 1s ease';
-			child.style.transform = 'translateY(0)';
-		});
-	}, 300); // Match the transition duration
+  // Reset positions of existing text boxes after animation
+  setTimeout(() => {
+    Array.from(textBoxContainer.children).forEach((child) => {
+      child.style.transition = 'transform 1s ease';
+      child.style.transform = 'translateY(0)';
+    });
+  }, 300);
 }
 
+/**
+ * Animates typing of text into an element.
+ * @param {HTMLElement} element - The element to type into.
+ * @param {string} text - The text to type.
+ * @param {number} [typingSpeed=25] - The speed of typing in ms per character.
+ */
 function typeText(element, text, typingSpeed = 25) {
-	if (!element) {
-		console.error('Element is not defined for typing animation.');
-		return;
-	}
+  if (!element) {
+    console.error('Element is not defined for typing animation.');
+    return;
+  }
 
-	let index = 0;
+  let index = 0;
 
-	// Typing animation logic
-	function typeCharacter() {
-		if (index < text.length) {
-		element.textContent += text.charAt(index); // Add the next character
-		index++;
-		setTimeout(typeCharacter, typingSpeed); // Schedule the next character
-		}
-	}
+  function typeCharacter() {
+    if (index < text.length) {
+      element.textContent += text.charAt(index);
+      index++;
+      setTimeout(typeCharacter, typingSpeed);
+    }
+  }
 
-	typeCharacter();
+  typeCharacter();
 }
 
-function quizBegin(){
-	mode = 3;
-	setMode();
-	//Wait
+/**
+ * Initiates the quiz prompt.
+ */
+function quizBegin() {
+  mode = 3;
+  setMode();
 }
 
+/**
+ * Begins a True/False quiz.
+ */
 async function quizBeginTF() {
-	spinOn();
-	url = base_url + "/generate-quiz"
+  spinOn();
+  const url = `${baseUrl}/generate-quiz`;
 
-	const data = {
-		url: url,
-		experience: 'Battery Video',
-		quiz_type: "true/false"
-	};
+  const payload = {
+    experience: 'Battery Video',
+    quiz_type: "true/false",
+  };
 
-	quizSocket.send(JSON.stringify(data))
+  const data = {
+	endpoint: url,
+	payload: payload,
+	headers: headers,
+	auth: auth
+  }
+
+  quizSocket.send(JSON.stringify(data));
 }
 
-function quizAnswerTF(sent){
-	if(sent == correct_answer){
-		confetti.start()
-		addResponse("Great Job!! :P");
-		quizBeginTF();
-		setTimeout('confetti.stop()',3000);
-	}
+/**
+ * Handles the answer for a True/False quiz.
+ * @param {boolean} sent - The user's answer.
+ */
+function quizAnswerTF(sent, button) {
+  if (sent == correctAnswer) {
+    confetti.start();
+    addResponse("Great Job!! :P");
+    quizBeginTF();
+    setTimeout(() => confetti.stop(), 3000);
+  } else {
+	button.style.opacity = 0;
+  }
 }
 
-function backToMain(){
-	mode = 0;
-	setMode();
-	document.getElementById("buttonA").style.opacity = 0;
-	document.getElementById("buttonB").style.opacity = 0;
-	document.getElementById("buttonC").style.opacity = 0;
-	document.getElementById("buttonD").style.opacity = 0;
-	addResponse("", null, "100vh");
+/**
+ * Returns to the main mode.
+ */
+function backToMain() {
+  mode = 0;
+  setMode();
+  ['buttonA', 'buttonB', 'buttonC', 'buttonD', 'trueButton', 'falseButton'].forEach(id => {
+    const button = document.getElementById(id);
+    if (button) button.style.opacity = 0;
+  });
+  addResponse("", null, "100vh");
 
-	if(Language == "English"){
-		addResponse("Hello! Click the microphone icon below to talk to me!", null,"5vh");
-	} else {
-		translate("Hello! Click the microphone icon below to talk to me!").then(words => addResponse(words, null, "3vh"));
-	}
+  if (language == "English") {
+    addResponse("Hello! Click the microphone icon below to talk to me!", null, "5vh");
+  } else {
+    translate("Hello! Click the microphone icon below to talk to me!")
+      .then(words => addResponse(words, null, "3vh"));
+  }
+}
+/**
+ * Creates an image element with specified attributes.
+ * @param {string} src - Source of the image.
+ * @param {string} [width="2vh"] - Width of the image.
+ * @param {string} [height="2vh"] - Height of the image.
+ * @param {string} [float="left"] - Float property.
+ * @param {string} [marginRight="1vw"] - Right margin.
+ * @param {string} [transform=""] - CSS transform.
+ * @returns {HTMLElement} The created image element.
+ */
+function createImageElement(src, width = "2vh", height = "2vh", float = "left", marginRight = "1vw", transform = "") {
+	const img = document.createElement('img');
+	img.src = src;
+	img.style.width = width;
+	img.style.height = height;
+	img.style.float = float;
+	img.style.marginRight = marginRight;
+	img.style.transform = transform;
+	return img;
 }
 
+/**
+ * Begins a Multiple Choice quiz.
+ */
 async function quizBeginMC() {
-	mode = 5;
-	setMode();
+	spinOn();
 
-	// Make all buttons visible:
-	document.getElementById("buttonA").style.opacity = 1;
-	document.getElementById("buttonB").style.opacity = 1;
-	document.getElementById("buttonC").style.opacity = 1;
-	document.getElementById("buttonD").style.opacity = 1;
-
-	// Make API call to get the quiz (simulated with test data)
-	try {
-		const responce = await getQuizMC();
-
-		// Reset responses
-		
-
-		// Get the correct answer index
-		correct_answer = responce.answers.indexOf(responce.correct_answer);
-
-		// Helper function to create unique image elements
-		function createImageElement(src, width = "2vh", height = "2vh", float = "left", marginRight = "1vw", transform = "") {
-		const img = document.createElement('img');
-		img.src = src;
-		img.style.width = width;
-		img.style.height = height;
-		img.style.float = float;
-		img.style.marginRight = marginRight;
-		img.style.transform = transform; // Optional: Apply transformation
-		return img;
-		}
-
-		if(Language == "English"){
-		const question = responce.question;
-		const Answers = await Promise.all(responce.answers.map(answer => (answer)));
-
-		for (let i = 0; i < 18; i++) {
-			addResponse("");
-		}
-
-		// Add translated responses with unique images
-		addResponse(Answers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
-		addResponse(Answers[2], createImageElement("./assets/whiteCircle.png"));
-		addResponse(Answers[1], createImageElement("./assets/whiteSquare.png"));
-		addResponse(Answers[0], createImageElement("./assets/whiteTriangle.png"));
-
-		// Add translated question as a response
-		addResponse(question);
-
-		} else{
-		// Translate question and answers
-		const translatedQuestion = await translate(responce.question);
-		const translatedAnswers = await Promise.all(responce.answers.map(answer => translate(answer)));
-
-		for (let i = 0; i < 18; i++) {
-		addResponse("");
-		}
-
-		// Add translated responses with unique images
-		addResponse(translatedAnswers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
-		addResponse(translatedAnswers[2], createImageElement("./assets/whiteCircle.png"));
-		addResponse(translatedAnswers[1], createImageElement("./assets/whiteSquare.png"));
-		addResponse(translatedAnswers[0], createImageElement("./assets/whiteTriangle.png"));
-
-		// Add translated question as a response
-		addResponse(translatedQuestion);
-		}
-	} catch (error) {
-		console.error("Error in quizBeginMC:", error);
+	const url = `${baseUrl}/generate-quiz`;
+  
+	const payload = {
+	  experience: 'Battery Video',
+	  quiz_type: "multiple_choice",
+	};
+  
+	const data = {
+	  endpoint: url,
+	  payload: payload,
+	  headers: headers,
+	  auth: auth
 	}
+  
+	quizSocket.send(JSON.stringify(data));
 }
 
-function quizAnswerMC(sent, me){
-	if (sent == correct_answer){
-		confetti.start()
-		addResponse("Great Job!! :P")
+/**
+ * Handles the answer for a Multiple Choice quiz.
+ * @param {number} sent - The index of the user's answer.
+ * @param {HTMLElement} button - The button element clicked.
+ */
+function quizAnswerMC(sent, button) {
+	if (sent == correctAnswer) {
+		confetti.start();
+		addResponse("Great Job!! :P");
 		quizBeginMC();
-		setTimeout('confetti.stop()',3000);
+		setTimeout(() => confetti.stop(), 3000);
 	} else {
-		me.style.opacity = 0;
+		button.style.opacity = 0;
 	}
 }
 
+/**
+ * Translates the given text to the current language.
+ * @param {string} text - The text to translate.
+ * @returns {Promise<string>} The translated text.
+ */
 async function translate(text) {
   spinOn();
   const url = "http://localhost:8080/translate";
   console.log("Translating:", text);
 
-	const body = {
-		text: text,
-		language: Language
-	};
+  const body = {
+    text: text,
+    language: language,
+  };
 
   try {
-    const response = await axios.post(url, body); // Await the response directly
+    const response = await axios.post(url, body);
     console.log("Translated text:", response.data.translated_text);
-      spinOff();
-    return response.data.translated_text; // Return the translated text
+    spinOff();
+    return response.data.translated_text;
   } catch (error) {
     console.error("Error in translate function:", error);
-    throw error; // Re-throw to handle errors in the caller
-  }
-}
-
-async function transcripeFile(audioFile) {
-  spinOn();
-  const url = "http://localhost:8080/audio-to-text";
-
-	// Create a FormData object and append the file
-	const formData = new FormData();
-	formData.append("file", audioFile, audioFile.name); // Ensure the file is appended with a proper name
-
-	try {
-		// Make the POST request
-		const response = await axios.post(url, formData, {
-		headers: {
-			"Content-Type": "multipart/form-data", // Explicitly set the Content-Type
-		},
-		});
-
-    // Log and return the response data
-    console.log("Response data:", response.data);
-    spinOff();
-    return response.data;
-  } catch (error) {
-    // Log detailed error information for debugging
-    console.error("Error in transcripeFile:", error);
     throw error;
   }
 }
 
-async function generateResponce(){
+/**
+ * Transcribes the given audio file to text.
+ * @param {File} audioFile - The audio file to transcribe.
+ * @returns {Promise<object>} The transcription result.
+ */
+async function transcribeFile(audioFile) {
   spinOn();
-  const url = "http://localhost:8080/continue-chat";
-// Storing the history data in LocalStorage
-console.log(history);
-localStorage.setItem('history', JSON.stringify(history));
+  const url = "http://localhost:8080/audio-to-text";
 
-	// Retrieving the history data from LocalStorage
-	const storedHistory = JSON.parse(localStorage.getItem('history'));
+  const formData = new FormData();
+  formData.append("file", audioFile, audioFile.name);
 
   try {
-    await axios.post(url, storedHistory).then(response => {
-       // Wait for the response
-       history[history.length] = {"role": "assistant", 
-        "content" : response.data.reply}
-      addResponse(response.data.reply);
-      textToSpeech(response.data.reply);
-      spinOff();
-    return response.data}); // Return the response data
+    const response = await axios.post(url, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    console.log("Response data:", response.data);
+    spinOff();
+    return response.data;
   } catch (error) {
-    console.error("Error in postData:", error);
-    throw error; // Re-throw the error so the caller can handle it
+    console.error("Error in transcribeFile:", error);
+    throw error;
   }
 }
 
+/**
+ * Generates a response based on the chat history.
+ */
+async function generateResponse() {
+  spinOn();
+  const url = "http://localhost:8080/continue-chat";
+  console.log(history);
+  localStorage.setItem('history', JSON.stringify(history));
+
+  const storedHistory = JSON.parse(localStorage.getItem('history'));
+
+  try {
+    const response = await axios.post(url, storedHistory);
+    history.push({ role: "assistant", content: response.data.reply });
+    addResponse(response.data.reply);
+    textToSpeech(response.data.reply);
+    spinOff();
+  } catch (error) {
+    console.error("Error in generateResponse:", error);
+    throw error;
+  }
+}
+
+/**
+ * Converts text to speech and plays the audio.
+ * @param {string} text - The text to convert to speech.
+ */
 async function textToSpeech(text) {
   spinOn();
   const url = "http://localhost:8080/text-to-audio";
-  
-  // Step 1: Prepare the data object
+
   const data = { text: text };
 
-	try {
-		// Step 2: Send POST request to the server
-		const response = await axios.post(url, data, { responseType: 'arraybuffer' });
+  try {
+    const response = await axios.post(url, data, { responseType: 'arraybuffer' });
 
-		// Step 3: Check if the response is valid
-		if (response.headers['content-type'] === 'audio/mpeg') {
-		// Step 4: Convert the binary response data to a Blob
-		const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
-
-      // Step 5: Create an audio element and set the Blob as the source
+    if (response.headers['content-type'] == 'audio/mpeg') {
+      const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
       const audio = new Audio(URL.createObjectURL(audioBlob));
       spinOff();
-      audio.play();  // Play the audio
       audio.volume = volume;
-      console.log('Audio is playing');
-      console.log(audio);
+      audio.play();
+      console.log('Audio is playing', audio);
     } else {
       throw new Error('Invalid response');
     }
@@ -746,180 +832,120 @@ async function textToSpeech(text) {
   }
 }
 
-//Prompt the bot fit the role better
-async function innit(exhibitInnit){
-//   addResponce("", null, "100vh");
-//   const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
-//   addResponce("Hello! Click the microphone icon below to talk to me!", null,"5vh");
+/**
+ * Initializes the application based on the exhibit.
+ * @param {string} exhibitInit - The exhibit to initialize.
+ */
+async function init(exhibitInit) {
+  // Implementation needed based on your requirements
+}
+
+// /**
+//  * Fetches a Multiple Choice quiz from the server.
+//  * @returns {Promise<object>} The quiz data.
+//  */
+// async function getQuizMC() {
+//   spinOn();
+//   const url = "http://localhost:8080/generate-quiz";
+
+//   const data = {
+//     experience: exhibit,
+//     quiz_type: "multiple_choice",
+//   };
+
+//   localStorage.setItem('MCdata', JSON.stringify(data));
+//   const storedData = JSON.parse(localStorage.getItem('MCdata'));
+
+//   console.log(storedData);
+
 //   try {
-//     // Make the GET request using fetch
-//     const response = await fetch(url);
-
-	// 	// Check if the response was successful (status code 200)
-	// 	if (response.ok) {
-	// 		// Parse the JSON response
-	// 		const data = await response.json();
-	// 		const experience = data.find(exp => exp.ExperienceName === exhibitInnit);
-	// 		console.log(data);
-	// 		if (experience) {
-	// 			exhibit = experience.ExperienceName;
-	// 			console.log(experience);
-	// 			console.log(exhibit);
-	// 			history[history.length] = 
-	// 			{"role": "system", "content": ("I would you to make your responses one or two sentences and fewer than 50 words." + 
-	// 			"You are a helpful assistant at a children's museum, Discovery World in Milwaukee. You are mostly likley talking wiht a child whos curious about the exhibit they're at. The exhibit you're at right now is" + experience.ExperienceName + 
-	// 			"Here is some of the signs at the  exhibit you are currentlty at: " + experience.Copy +
-	// 			"A general decription of this exhibit is: " + experience.Description +
-	// 			"Provide the users with fun facts, and maybe even tell them to take a quiz by clicking below if they're curious" +
-	// 			"Discovery World has other exhibits too. Encourage users to look at other exhibits. Exhibits that are" +
-	// 			"close together have simular topics. Here is a json of other Discover World exhibits:" + data
-	// 			)}
-
-	// 		} else {
-	// 			console.log('Experience not found');
-	// 		}
-	// 	} else {
-	// 	console.error(`Request failed with status code ${response.status}: ${response.statusText}`);
-	// 	}
-	// } catch (error) {
-	// 	console.error('Error during request:', error);
-	// }
-}
-
-async function getQuizMC(){
-  spinOn();
-  //Replace with the actual URL of your API
-	const url = "http://localhost:8080/generate-quiz"
-
-	console.log(exhibit);
-
-	//Define the chat history
-	const data = {
-	experience: exhibit,
-	quiz_type: "multiple_choice"
-	};
-
-	localStorage.setItem('MCdata', JSON.stringify(data));
-	const storedData = JSON.parse(localStorage.getItem('MCdata'));
-
-	console.log(storedData);
-	try {
-	// Use await directly to handle the response
-	const responseMC = await axios.post(url, json=data);
-
-	// Log the response for debugging
-	console.log("Response from server:", responseMC.data);
-
-  // Return the response data
-  spinOff();
-  return responseMC.data; // Make sure the return is outside of any then block
-} catch (error) {
-  // Log detailed error information
-  console.error("Error in postData:", error.response?.data || error.message);
-  throw error; // Re-throw the error to propagate it
-}
-}
-
-// async function getQuizTF(){
-
-//   //Replace with the actual URL of your API
-// const url = "http://localhost:8080/generate-quiz"
-
-// 	// console.log(exhibit);
-
-// 	// //Define the chat history
-// 	// const data = {
-// 	// 	experience: exhibit,
-// 	// 	quiz_type: "true_false"
-// 	// };
-
-// 	// localStorage.setItem('TFdata', JSON.stringify(data));
-// 	// const storedData = JSON.parse(localStorage.getItem('TFdata'));
-
-// 	// console.log(storedData);
-// 	// try {
-// 	// 	// Use await directly to handle the response
-// 	// 	const responseTF = await axios.post(url, json=data);
-
-// 	// 	// Log the response for debugging
-// 	// 	console.log("Response from server:", responseTF.data);
-
-//   // Return the response data
-//   spinOff();
-//   return responseTF.data; // Make sure the return is outside of any then block
-// } catch (error) {
-//   // Log detailed error information
-//   console.error("Error in postData:", error.response?.data || error.message);
-//   throw error; // Re-throw the error to propagate it
-// }
+//     const responseMC = await axios.post(url, data);
+//     console.log("Response from server:", responseMC.data);
+//     spinOff();
+//     return responseMC.data;
+//   } catch (error) {
+//     console.error("Error in getQuizMC:", error.response?.data || error.message);
+//     throw error;
+//   }
 // }
 
+/**
+ * Translates button labels to the current language.
+ */
 async function translateButtons() {
-	const buttonPromptEl = document.getElementById("prompt");
-	const buttonPrompt2El = document.getElementById("leftPrompt");
-	const buttonPrompt3El = document.getElementById("rightPrompt");
-	const buttonTrueEl = document.getElementById("trueButton");
-	const buttonFalseEl = document.getElementById("falseButton");
+  const buttonPromptEl = document.getElementById("prompt");
+  const buttonPrompt2El = document.getElementById("leftPrompt");
+  const buttonPrompt3El = document.getElementById("rightPrompt");
+  const buttonTrueEl = document.getElementById("trueButton");
+  const buttonFalseEl = document.getElementById("falseButton");
 
-	try {
-		// Translate each button's innerHTML
-		const translations = await Promise.all([
-			translate(buttonPromptEl.innerHTML),
-			translate(buttonPrompt2El.innerHTML),
-			translate(buttonPrompt3El.innerHTML),
-			translate(buttonTrueEl.innerHTML),
-			translate(buttonFalseEl.innerHTML),
-		]);
+  try {
+    const translations = await Promise.all([
+      translate(buttonPromptEl.innerHTML),
+      translate(buttonPrompt2El.innerHTML),
+      translate(buttonPrompt3El.innerHTML),
+      translate(buttonTrueEl.innerHTML),
+      translate(buttonFalseEl.innerHTML),
+    ]);
 
-		// Assign translations back to their respective buttons
-		buttonPromptEl.innerHTML = translations[0];
-		buttonPrompt2El.innerHTML = translations[1];
-		buttonPrompt3El.innerHTML = translations[2];
-		buttonTrueEl.innerHTML = translations[3];
-		buttonFalseEl.innerHTML = translations[4];
+    buttonPromptEl.innerHTML = translations[0];
+    buttonPrompt2El.innerHTML = translations[1];
+    buttonPrompt3El.innerHTML = translations[2];
+    buttonTrueEl.innerHTML = translations[3];
+    buttonFalseEl.innerHTML = translations[4];
 
-		console.log("All buttons translated successfully:", translations);
-		return translations; // Return all translations as an array
-	} catch (error) {
-		console.error("Error translating buttons:", error);
-		return undefined; // Handle errors gracefully
-	}
+    console.log("All buttons translated successfully:", translations);
+    return translations;
+  } catch (error) {
+    console.error("Error translating buttons:", error);
+    return undefined;
+  }
 }
 
-function sleepy(){
-	let time = new Date().getTime();
+/**
+ * Handles the sleep timer to reset the mode after inactivity.
+ */
+function sleepy() {
+  const currentTime = new Date().getTime();
 
-  //When timer is 0
-	if(time - sleepTimer > (sleepyClock - 1)){
-
-		mode = 0;
+  // When timer is 0
+  if (currentTime - sleepTimer > sleepyClock.getTime() - 1) {
+    mode = 0;
     setMode();
-		innit(exhibit);
-    document.getElementById("buttonA").style.opacity = 0;
-    document.getElementById("buttonB").style.opacity = 0;
-    document.getElementById("buttonC").style.opacity = 0;
-    document.getElementById("buttonD").style.opacity = 0;
-	}
-	else{
-		setTimeout(sleepy,1000);
-		//console.log((time - sleepTimer) + " > " + (sleepyClock - 1));
-		
-	}
+    init(exhibit);
+    ['buttonA', 'buttonB', 'buttonC', 'buttonD'].forEach(id => {
+      const button = document.getElementById(id);
+      if (button) button.style.opacity = 0;
+    });
+  } else {
+    setTimeout(sleepy, 1000);
+  }
 }
 
-function muteToggle(){
-
+/**
+ * Toggles the mute state of the audio.
+ */
+function muteToggle() {
   const mute = document.getElementById("muteIcon");
-  if(volume == 1){
-      volume = 0.5;
-      mute.src= "./assets/volumelow.svg";
-  } else if(volume == 0.5){
-    volume = 0;
-    mute.src= "./assets/mute.svg";
-	}
-	else if(volume == 0){
-	volume = 1;
-	mute.src= "./assets/volumeHigh.svg";
-	}
+  if (!mute) {
+    console.error('Element with ID "muteIcon" not found.');
+    return;
+  }
 
+  switch (volume) {
+    case 1:
+      volume = 0.5;
+      mute.src = "./assets/volumelow.svg";
+      break;
+    case 0.5:
+      volume = 0;
+      mute.src = "./assets/mute.svg";
+      break;
+    case 0:
+      volume = 1;
+      mute.src = "./assets/volumeHigh.svg";
+      break;
+    default:
+      console.warn(`Unknown volume level: ${volume}`);
+  }
 }

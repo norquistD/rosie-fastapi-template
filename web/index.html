@@ -14,14 +14,14 @@
 </head>
 
 
-<body onload="innit('Meresamun Mummy'), sleepy()">
+<body onload="init('Meresamun Mummy'), sleepy()">
     <div id="particles-js"></div>
     <script src="./Scripts/particles.js"></script>
 
   <div id="wrapper">
     <div id="headerDiv" class="layer">
         <img src="./images/logos/DW.png" float="center" width="25%"></img>
-        <div id="spins" class="spinner"></div>
+        <div id="spins" class="spinner" style="display: none;"></div>
       </div>
 
 
@@ -72,11 +72,11 @@
                 True/False
               </button>
 
-            <button id="trueButton" class="inactiveButton" onClick="quizAnswerTF('True')">
+            <button id="trueButton" class="inactiveButton" onClick="quizAnswerTF('True', this)">
               True
             </button>
 
-            <button id="falseButton" class="inactiveButton" onClick="quizAnswerTF('False')">
+            <button id="falseButton" class="inactiveButton" onClick="quizAnswerTF('False', this)">
               False
             </button>
 

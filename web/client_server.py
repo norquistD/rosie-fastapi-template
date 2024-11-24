@@ -29,8 +29,6 @@ class ConnectionManager:
             if endpoint is None or self.endpoint_map.get(connection) == endpoint:
                 await connection.send_text(message)
 
-password = 'password'
-auth = ('norquistd', 'aKBRVBpGmQx')
 manager = ConnectionManager()
 
 @app.websocket("/ws/quiz")
@@ -42,20 +40,7 @@ async def quiz_endpoint(websocket: WebSocket):
             data = await websocket.receive_json()
             print(f"Received on /ws/quiz: {data}")
 
-            headers = {
-                'APIToken': f"Bearer {password}"
-            }
-
-            arguements = {
-                'experience': data['experience'],
-                'quiz_type': data['quiz_type']
-            }
-
-            response = requests.post(data['url'], auth=auth, headers=headers, json=arguements)
-
-            print("Status Code:", response.status_code)
-            print("Content-Type:", response.headers.get('Content-Type'))
-            print("Content-Type:", response.json())
+            response = requests.post(data['endpoint'], auth=(data['auth']['username'], data['auth']['password']), headers=data['headers'], json=data['payload'])
                   
             await websocket.send_text(json.dumps(response.json()))
     except WebSocketDisconnect:
@@ -75,45 +60,5 @@ async def translate_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         print("Disconnected from /ws/translate")
         manager.disconnect(websocket)
-
-
-# @app.websocket("/ws")
-# async def websocket_endpoint(websocket: WebSocket):
-#     await manager.connect(websocket)
-#     try:
-#         while True:
-#             data = await websocket.receive_text()
-#             message = json.loads(data)
-
-#             # Handle translation requests
-#             if message.get("type") == "translate":
-#                 base_url = 'https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/1649/'
-#                 extension_url = 'discovery-world/'
-#                 full_url = base_url + extension_url
-#                 headers = {
-#                     'APIToken': 'Bearer password'
-#                 }
-
-#                 response = requests.get(full_url, auth=('norquistd', 'aKBRVBpGmQx'), headers=headers)
-
-#                 print("Status Code:", response.status_code)
-#                 print("Content-Type:", response.headers.get('Content-Type'))
-#                 print("Json:", response.json())
-#                 await manager.send_message(json.dumps(response.json()), websocket)
-
-#             # Handle quiz requests
-#             elif message.get("type") == "quiz":
-#                 quiz_response = {
-#                     "type": "quiz",
-#                     "question": "What is the capital of France?",
-#                     "options": ["Paris", "London", "Rome", "Berlin"],
-#                     "answer": "Paris",
-#                 }
-#                 await manager.send_message(json.dumps(quiz_response), websocket)
-
-#             else:
-#                 await manager.send_message(json.dumps({"error": "Unsupported message type"}), websocket)
-#     except WebSocketDisconnect:
-#         manager.disconnect(websocket)
 
 # Run this server with: `uvicorn server:app --reload`
