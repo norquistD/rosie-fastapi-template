@@ -8,74 +8,56 @@ let mediaRecorder; // To manage the recording state
 let audioChunks = []; // To store audio data
 let isRecording = false; // To track recording state
 
-// API Variables
-const base_url = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/29461/discovery-world/";
-const username = "norquistd";
-const passwordAuth = "aKBRVBpGmQx";
+let socket = new WebSocket("ws://localhost:8000/ws");
 
-// Function to make a preflight OPTIONS request
-async function preflightRequest() {
-    const preflightHeaders = {
-        "Content-Type": "application/json",
-        "Authorization": "Basic bm9ycXVpc3RkOmFLQlJWQm1HcFF4",
-        "APIToken": "Bearer password"
-    };
+// Handle connection open
+socket.onopen = () => {
+    console.log("WebSocket connection established.");
+};
 
-    try {
-        const response = await fetch(base_url, {
-            method: "OPTIONS", // Preflight request method
-            headers: preflightHeaders,
-            mode: "cors", // Cross-Origin Request
-        });
+// Handle incoming messages
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log("Message from server:", data);
 
-        if (response.ok) {
-            console.log("Preflight OPTIONS request succeeded");
-        } else {
-            throw new Error(`Preflight failed with status: ${response.status}`);
-        }
-    } catch (error) {
-        console.error("Error during preflight:", error.message);
+    if (data.type === "translation") {
+        console.log("Translated Text:", data.translated_text);
+        addResponce(`Translation: ${data.translated_text}`);
+    } else if (data.type === "quiz") {
+        console.log("Quiz Question:", data.question);
+        addResponce(`Quiz: ${data.question}`);
+    } else if (data.error) {
+        console.error("Error:", data.error);
     }
+};
+
+// Handle connection close
+socket.onclose = () => {
+    console.log("WebSocket connection closed.");
+};
+
+// Handle connection errors
+socket.onerror = (error) => {
+    console.error("WebSocket error:", error);
+};
+
+// Send a translation request
+function sendTranslationRequest(text, language) {
+    const message = {
+        type: "translate",
+        text: text,
+        language: language,
+    };
+    socket.send(JSON.stringify(message));
 }
 
-// Function to make the POST request
-async function makePostRequest() {
-    const requestBody = {
-        text: "Hello",
-        language: "Russian",
+// Send a quiz request
+function sendQuizRequest() {
+    const message = {
+        type: "quiz",
     };
-
-    const headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Basic bm9ycXVpc3RkOmFLQlJWQm1HcFF4",
-        "APIToken": "Bearer password",
-    };
-
-    try {
-        // Ensure preflight is successful before making the POST request
-        await preflightRequest();
-
-        // Make the actual POST request
-        const response = await fetch(base_url, {
-            method: "POST",
-            headers: headers,
-            body: JSON.stringify(requestBody),
-            credentials: "include",
-            mode: "cors",
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            console.log("Translated Text:", data.translated);
-        } else {
-            throw new Error(`Request failed with status: ${response.status}`);
-        }
-    } catch (error) {
-        console.error("Error:", error.message);
-    }
+    socket.send(JSON.stringify(message));
 }
-
-makePostRequest()
 
 //Test quiz varible
 const testQuizData = {
