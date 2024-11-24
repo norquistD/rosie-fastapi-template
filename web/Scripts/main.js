@@ -64,30 +64,31 @@ function initializeWebSocket(url, handlers) {
 // Initialize WebSocket for Quiz
 const quizSocket = initializeWebSocket("ws://localhost:8000/ws/quiz", {
 	onMessage: async (data) => {
-		mode = 4;
-		setMode();
-		//Make Api call
-		if (Language === "English") {
-			correct_answer = data.correct_answer;
-			for (i = 0; i < 20; i++) {
-				addResponse("");
+			mode = 4;
+			setMode();
+			//Make Api call
+			if (Language === "English") {
+				correct_answer = data.correct_answer;
+				for (i = 0; i < 20; i++) {
+					addResponse("");
+				}
+				addResponse(data.question);
+			} else {
+				try {
+					// Wait for getQuizTF() to resolve
+					const response = data;
+		
+					// Wait for both translations to resolve
+					correct_answer = responce.correct_answer;
+					const question = await translate(response.question);
+		
+					// Add translated responses
+					addResponse(question);
+				} catch (error) {
+					console.error("Error in quizBeginTF:", error);
+				}
 			}
-			addResponse(data.question);
-		} else {
-			try {
-				// Wait for getQuizTF() to resolve
-				const response = data;
-	
-				// Wait for both translations to resolve
-				correct_answer = responce.correct_answer;
-				const question = await translate(response.question);
-	
-				// Add translated responses
-				addResponse(question);
-			} catch (error) {
-				console.error("Error in quizBeginTF:", error);
-			}
-		}
+			spinOff();
 		},
 	});
 
@@ -241,7 +242,7 @@ async function updateLanguage(newLanguage){
   console.log("ping");
   Language = newLanguage;
   history[history.length] = {"role": "system", "content": ("The user has switched the current langauge to: " + Language)};
-  translate("Hello, I'm now speaking in " + Language + " Click the microphone icon below to talk to me!").then( words => addResponce(words, null, "3vh"));
+  translate("Hello, I'm now speaking in " + Language + " Click the microphone icon below to talk to me!").then( words => addResponse(words, null, "3vh"));
   translateButtons();
   toggleLanguageElements();
 }
@@ -426,7 +427,7 @@ function addTranscript(transcript, size) {
 	}, 300); // Match the transition duration
 }
 
-function addResponce(responce, img, size){
+function addResponse(responce, img, size){
   //reset sleep timer
 sleepyClock = new Date();
   if(!size){
@@ -521,6 +522,7 @@ function quizBegin(){
 }
 
 async function quizBeginTF() {
+	spinOn();
 	url = base_url + "/generate-quiz"
 
 	const data = {
@@ -703,7 +705,7 @@ localStorage.setItem('history', JSON.stringify(history));
        // Wait for the response
        history[history.length] = {"role": "assistant", 
         "content" : response.data.reply}
-      addResponce(response.data.reply);
+      addResponse(response.data.reply);
       textToSpeech(response.data.reply);
       spinOff();
     return response.data}); // Return the response data
@@ -746,12 +748,12 @@ async function textToSpeech(text) {
 
 //Prompt the bot fit the role better
 async function innit(exhibitInnit){
-  addResponce("", null, "100vh");
-  const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
-  addResponce("Hello! Click the microphone icon below to talk to me!", null,"5vh");
-  try {
-    // Make the GET request using fetch
-    const response = await fetch(url);
+//   addResponce("", null, "100vh");
+//   const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
+//   addResponce("Hello! Click the microphone icon below to talk to me!", null,"5vh");
+//   try {
+//     // Make the GET request using fetch
+//     const response = await fetch(url);
 
 	// 	// Check if the response was successful (status code 200)
 	// 	if (response.ok) {
@@ -787,7 +789,7 @@ async function innit(exhibitInnit){
 async function getQuizMC(){
   spinOn();
   //Replace with the actual URL of your API
-const url = "http://localhost:8080/generate-quiz"
+	const url = "http://localhost:8080/generate-quiz"
 
 	console.log(exhibit);
 
@@ -818,39 +820,39 @@ const url = "http://localhost:8080/generate-quiz"
 }
 }
 
-async function getQuizTF(){
-  spinOn();
-  //Replace with the actual URL of your API
-const url = "http://localhost:8080/generate-quiz"
+// async function getQuizTF(){
 
-	// console.log(exhibit);
+//   //Replace with the actual URL of your API
+// const url = "http://localhost:8080/generate-quiz"
 
-	// //Define the chat history
-	// const data = {
-	// 	experience: exhibit,
-	// 	quiz_type: "true_false"
-	// };
+// 	// console.log(exhibit);
 
-	// localStorage.setItem('TFdata', JSON.stringify(data));
-	// const storedData = JSON.parse(localStorage.getItem('TFdata'));
+// 	// //Define the chat history
+// 	// const data = {
+// 	// 	experience: exhibit,
+// 	// 	quiz_type: "true_false"
+// 	// };
 
-	// console.log(storedData);
-	// try {
-	// 	// Use await directly to handle the response
-	// 	const responseTF = await axios.post(url, json=data);
+// 	// localStorage.setItem('TFdata', JSON.stringify(data));
+// 	// const storedData = JSON.parse(localStorage.getItem('TFdata'));
 
-	// 	// Log the response for debugging
-	// 	console.log("Response from server:", responseTF.data);
+// 	// console.log(storedData);
+// 	// try {
+// 	// 	// Use await directly to handle the response
+// 	// 	const responseTF = await axios.post(url, json=data);
 
-  // Return the response data
-  spinOff();
-  return responseTF.data; // Make sure the return is outside of any then block
-} catch (error) {
-  // Log detailed error information
-  console.error("Error in postData:", error.response?.data || error.message);
-  throw error; // Re-throw the error to propagate it
-}
-}
+// 	// 	// Log the response for debugging
+// 	// 	console.log("Response from server:", responseTF.data);
+
+//   // Return the response data
+//   spinOff();
+//   return responseTF.data; // Make sure the return is outside of any then block
+// } catch (error) {
+//   // Log detailed error information
+//   console.error("Error in postData:", error.response?.data || error.message);
+//   throw error; // Re-throw the error to propagate it
+// }
+// }
 
 async function translateButtons() {
 	const buttonPromptEl = document.getElementById("prompt");
@@ -914,10 +916,10 @@ function muteToggle(){
   } else if(volume == 0.5){
     volume = 0;
     mute.src= "./assets/mute.svg";
-}
-else if(volume == 0){
-  volume = 1;
-  mute.src= "./assets/volumeHigh.svg";
-}
+	}
+	else if(volume == 0){
+	volume = 1;
+	mute.src= "./assets/volumeHigh.svg";
+	}
 
 }
