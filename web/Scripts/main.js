@@ -4,6 +4,13 @@
 var Language = "English";
 var mode = 0;
 var correct_answer;
+var sleepyClock = new Date();
+//3 min resets wihtout interaction
+var sleepTimer = 180000;
+var volume = 1;
+
+//reset sleep timer
+//sleepyClock = new Date();
 
 //initial prompting is done in the innit function, baed on current exhibit
 const history = []
@@ -52,16 +59,17 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
 
-  async function toggleMicrophoneIcon() {
+  async function toggleMicrophoneIcon(language) {
     const microphoneIcon = document.getElementById('microphoneIcon');
-    
+    const otherIcon = document.getElementById('otherLanguageButton');
     if (!microphoneIcon) {
       console.error('Element with ID "microphoneIcon" not found.');
       return;
     }
     
     microphoneIcon.classList.toggle('on');
-  
+    otherIcon.classList.toggle('on');
+
     if (isRecording) {
       // Stop the recording
       mediaRecorder.stop();
@@ -83,11 +91,15 @@ document.addEventListener('DOMContentLoaded', function() {
           const audioUrl = URL.createObjectURL(audioBlob);
           const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
 
+          //HERE IS WHERE TRANSCRIPTION HAPPENS
             transcripeFile(audioFile)
-           .then((transcript) => { addTranscript(transcript.transcription);
+           .then((transcript) => { if(language){
+            console.log(transcript.transcription);
+              updateLanguage(transcript.transcription);
+           } else{addTranscript(transcript.transcription);
               history[history.length] = {"role": "user", 
                 "content" : transcript.transcription}
-                generateResponce();
+                generateResponce();}
               }
              ) // Handle async function
           .catch((error) => console.error("Error in transcription:", error));
@@ -126,7 +138,7 @@ function toggleLanguageElements() {
     });
   }
 
-function updateLanguage(newLanguage){
+async function updateLanguage(newLanguage){
   document.getElementById("buttonA").style.opacity = 0;
    document.getElementById("buttonB").style.opacity = 0;
   document.getElementById("buttonC").style.opacity = 0;
@@ -228,6 +240,9 @@ function spinOff(){
   }
 
 function setMode(){
+//reset sleep timer
+sleepyClock = new Date();
+
   console.log(mode);
   //textBoxClass, Circle1Class, Circle2Class, buttonPrompt, buttonPrompt2, buttonPrompt3, buttonTrue, buttonFalse, buttonA, buttonB, buttonC, buttonD
   if(mode == 0){
@@ -321,6 +336,8 @@ if (textBoxContainer.firstChild) {
 }
 
 function addResponce(responce, img, size){
+  //reset sleep timer
+sleepyClock = new Date();
   if(!size){
     size = "1.5vh";
   }
@@ -355,7 +372,6 @@ function addResponce(responce, img, size){
     align-items: center;
   `;
   if(img != null){
-    console.log(img)
     textBoxDiv.appendChild(img);
   }
   textBoxDiv.appendChild(textBox)
@@ -569,6 +585,7 @@ function quizAnswerMC(sent, me){
 }
 
 async function translate(text) {
+  spinOn();
   const url = "http://localhost:8080/translate";
   console.log("Translating:", text);
 
@@ -580,6 +597,7 @@ async function translate(text) {
   try {
     const response = await axios.post(url, body); // Await the response directly
     console.log("Translated text:", response.data.translated_text);
+      spinOff();
     return response.data.translated_text; // Return the translated text
   } catch (error) {
     console.error("Error in translate function:", error);
@@ -588,6 +606,7 @@ async function translate(text) {
 }
 
 async function transcripeFile(audioFile) {
+  spinOn();
   const url = "http://localhost:8080/audio-to-text";
 
   // Create a FormData object and append the file
@@ -604,6 +623,7 @@ async function transcripeFile(audioFile) {
 
     // Log and return the response data
     console.log("Response data:", response.data);
+    spinOff();
     return response.data;
   } catch (error) {
     // Log detailed error information for debugging
@@ -613,6 +633,7 @@ async function transcripeFile(audioFile) {
 }
 
 async function generateResponce(){
+  spinOn();
   const url = "http://localhost:8080/continue-chat";
 // Storing the history data in LocalStorage
 console.log(history);
@@ -628,6 +649,7 @@ const storedHistory = JSON.parse(localStorage.getItem('history'));
         "content" : response.data.reply}
       addResponce(response.data.reply);
       textToSpeech(response.data.reply);
+      spinOff();
     return response.data}); // Return the response data
   } catch (error) {
     console.error("Error in postData:", error);
@@ -636,6 +658,7 @@ const storedHistory = JSON.parse(localStorage.getItem('history'));
 }
 
 async function textToSpeech(text) {
+  spinOn();
   const url = "http://localhost:8080/text-to-audio";
   
   // Step 1: Prepare the data object
@@ -652,7 +675,9 @@ async function textToSpeech(text) {
 
       // Step 5: Create an audio element and set the Blob as the source
       const audio = new Audio(URL.createObjectURL(audioBlob));
+      spinOff();
       audio.play();  // Play the audio
+      audio.volume = volume;
       console.log('Audio is playing');
       console.log(audio);
     } else {
@@ -665,6 +690,7 @@ async function textToSpeech(text) {
 
 //Prompt the bot fit the role better
 async function innit(exhibitInnit){
+  addResponce("", null, "100vh");
   const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
   addResponce("Hello! Click the microphone icon below to talk to me!", null,"5vh");
   try {
@@ -703,6 +729,7 @@ async function innit(exhibitInnit){
 }
 
 async function getQuizMC(){
+  spinOn();
   //Replace with the actual URL of your API
 const url = "http://localhost:8080/generate-quiz"
 
@@ -726,6 +753,7 @@ try {
   console.log("Response from server:", responseMC.data);
 
   // Return the response data
+  spinOff();
   return responseMC.data; // Make sure the return is outside of any then block
 } catch (error) {
   // Log detailed error information
@@ -735,6 +763,7 @@ try {
 }
 
 async function getQuizTF(){
+  spinOn();
   //Replace with the actual URL of your API
 const url = "http://localhost:8080/generate-quiz"
 
@@ -758,6 +787,7 @@ try {
   console.log("Response from server:", responseTF.data);
 
   // Return the response data
+  spinOff();
   return responseTF.data; // Make sure the return is outside of any then block
 } catch (error) {
   // Log detailed error information
@@ -796,4 +826,42 @@ async function translateButtons() {
     console.error("Error translating buttons:", error);
     return undefined; // Handle errors gracefully
   }
+}
+
+function sleepy(){
+	let time = new Date().getTime();
+
+  //When timer is 0
+	if(time - sleepTimer > (sleepyClock - 1)){
+
+		mode = 0;
+    setMode();
+		innit(exhibit);
+    document.getElementById("buttonA").style.opacity = 0;
+    document.getElementById("buttonB").style.opacity = 0;
+    document.getElementById("buttonC").style.opacity = 0;
+    document.getElementById("buttonD").style.opacity = 0;
+	}
+	else{
+		setTimeout(sleepy,1000);
+		//console.log((time - sleepTimer) + " > " + (sleepyClock - 1));
+		
+	}
+}
+
+function muteToggle(){
+
+  const mute = document.getElementById("muteIcon");
+  if(volume == 1){
+      volume = 0.5;
+      mute.src= "./assets/volumelow.svg";
+  } else if(volume == 0.5){
+    volume = 0;
+    mute.src= "./assets/mute.svg";
+}
+else if(volume == 0){
+  volume = 1;
+  mute.src= "./assets/volumeHigh.svg";
+}
+
 }

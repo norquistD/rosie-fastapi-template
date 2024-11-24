@@ -1,0 +1,29 @@
+#mute {
+    position: absolute;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    width: 7vw;
+    height: 7vw;
+    float: right;
+    right: 0.5vh;
+    bottom: 48vh;
+    padding: 1.4%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: black;
+    transition: fill 0.7s ease;
+  }
+  
+  /* Button logos */
+  #muteIcon{
+    transition: 0.7s;
+    size: 100%;
+  }
+  
+  .on {
+    transition: 0.7s;
+    filter: invert(34%) sepia(100%) saturate(5000%) hue-rotate(120deg); /* Green effect */
+    animation: pulse 2s ease-in-out infinite;
+  }

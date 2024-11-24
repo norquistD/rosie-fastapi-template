@@ -48,7 +48,7 @@ ul {
     overflow: hidden;
     padding: 0;
     position: absolute;
-    bottom: 4vh; /* Position the dropdown above the button */
+    bottom: 5.5vh; /* Position the dropdown above the button */
     left: 7%;
     width: 30%;
     background-color: white;
@@ -75,7 +75,7 @@ ul {
     color: black;
   }
   li button {
-    font-size: 1vh;
+    font-size: 1.5vh;
     border: none;
     background-color: rgb(0,0,0,0);
     width: 100%;
@@ -91,4 +91,16 @@ ul {
   
   ul li:nth-child(odd) {
     background-color: #e6e6e6;
+  }
+
+  #otherLanguageButton {
+    display: flex;
+    align-items: center;
+    justify-content: right;
+  }
+
+  .on {
+    transition: 0.7s;
+    filter: invert(34%) sepia(100%) saturate(5000%) hue-rotate(120deg); /* Green effect */
+    animation: pulse 2s ease-in-out infinite;
   }
