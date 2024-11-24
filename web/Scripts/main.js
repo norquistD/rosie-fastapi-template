@@ -1,4 +1,4 @@
-
+let mutex = false;
 
 //Global varibles
 var Language = "English";
@@ -6,46 +6,108 @@ var mode = 0;
 var correct_answer;
 
 //initial prompting is done in the innit function, baed on current exhibit
-const history = []
+const history = [];
 let exhibit = "";
+let base_url = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/1649" + "/discovery-world";
 
 //Audio globals
 let mediaRecorder; // To manage the recording state
 let audioChunks = []; // To store audio data
 let isRecording = false; // To track recording state
 
-let socket = new WebSocket("ws://localhost:8000/ws");
+function initializeWebSocket(url, handlers) {
+	const socket = new WebSocket(url);
 
-// Handle connection open
-socket.onopen = () => {
-	console.log("WebSocket connection established.");
-};
+	// Handle connection open
+	socket.onopen = () => {
+		console.log(`WebSocket connection to ${url} established.`);
+		if (handlers.onOpen) {
+			handlers.onOpen(socket);
+		} 
+	};
 
-// Handle incoming messages
-socket.onmessage = (event) => {
-	const data = JSON.parse(event.data);
-	console.log("Message from server:", data);
+	// Handle incoming messages
+	socket.onmessage = (event) => {
+		const data = JSON.parse(event.data);
+		console.log(`Message from ${url}:`, data);
+		if (handlers.onMessage) {
+			handlers.onMessage(data);
+		}			
+	};
 
-	if (data.type === "translation") {
-		console.log("Translated Text:", data.translated_text);
-		addResponce(`Translation: ${data.translated_text}`);
-	} else if (data.type === "quiz") {
-		console.log("Quiz Question:", data.question);
-		addResponce(`Quiz: ${data.question}`);
-	} else if (data.error) {
-		console.error("Error:", data.error);
-	}
-};
+	// Handle connection close
+	socket.onclose = () => {
+		console.log(`WebSocket connection to ${url} closed.`);
+		if (handlers.onClose) {
+			handlers.onClose();
+		} 
+	};
 
-// Handle connection close
-socket.onclose = () => {
-	console.log("WebSocket connection closed.");
-};
+	// Handle connection errors
+	socket.onerror = (error) => {
+		console.error(`WebSocket error on ${url}:`, error);
+		if (handlers.onError) {
+			handlers.onError(error);
+		}
+	};
 
-// Handle connection errors
-socket.onerror = (error) => {
-	console.error("WebSocket error:", error);
-};
+	return socket;
+}
+
+// Initialize WebSocket for Quiz
+const quizSocket = initializeWebSocket("ws://localhost:8000/ws/quiz", {
+	onMessage: async (data) => {
+		mode = 4;
+		setMode();
+		//Make Api call
+		if (Language === "English") {
+			correct_answer = data.correct_answer;
+			for (i = 0; i < 20; i++) {
+				addResponse("");
+			}
+			addResponse(data.question);
+		} else {
+			try {
+				// Wait for getQuizTF() to resolve
+				const response = data;
+	
+				// Wait for both translations to resolve
+				correct_answer = responce.correct_answer;
+				const question = await translate(response.question);
+	
+				// Add translated responses
+				addResponse(question);
+			} catch (error) {
+				console.error("Error in quizBeginTF:", error);
+			}
+		}
+		},
+	});
+
+// Initialize WebSocket for Translate
+const translateSocket = initializeWebSocket("ws://localhost:8000/ws/translate", {
+	onMessage: (data) => {
+			translateSocket.send(data)
+		},
+	});
+
+// // Send a translation request
+// function sendTranslationRequest(text, language) {
+//     const message = {
+//         type: "translate",
+//         text: text,
+//         language: language,
+//     };
+//     socket.send(JSON.stringify(message));
+// }
+
+// // Send a quiz request
+// function sendQuizRequest() {
+//     const message = {
+//         type: "quiz",
+//     };
+//     socket.send(JSON.stringify(message));
+// }
 
 document.addEventListener('DOMContentLoaded', function() {
 	particlesJS('particles-js', {
@@ -167,7 +229,7 @@ function updateLanguage(newLanguage) {
 	console.log("ping");
 	Language = newLanguage;
 	history[history.length] = {"role": "system", "content": ("The user has switched the current langauge to: " + Language)};
-	translate("Hello, I'm now speaking in " + Language + " Click the microphone icon below to talk to me!").then( words => addResponce(words, null, "3vh"));
+	translate("Hello, I'm now speaking in " + Language + " Click the microphone icon below to talk to me!").then( words => addResponse(words, null, "3vh"));
 	translateButtons();
 	toggleLanguageElements();
 }
@@ -221,13 +283,13 @@ function setClassesOfElements(
 
 	// Buttons - Toggle .activeButton and .inactiveButton
 	function toggleButtonClass(buttonElement, isActive) {
-	if (isActive) {
-		buttonElement.classList.add("activeButton");
-		buttonElement.classList.remove("inactiveButton");
-	} else {
-		buttonElement.classList.add("inactiveButton");
-		buttonElement.classList.remove("activeButton");
-	}
+		if (isActive) {
+			buttonElement.classList.add("activeButton");
+			buttonElement.classList.remove("inactiveButton");
+		} else {
+			buttonElement.classList.add("inactiveButton");
+			buttonElement.classList.remove("activeButton");
+		}
 	}
 
 	toggleButtonClass(buttonPromptEl, buttonPrompt);
@@ -242,22 +304,21 @@ function setClassesOfElements(
 
 	// Text box - Toggle .lower
 	if (textBoxClass) {
-	textBox.classList.add("lower");
+		textBox.classList.add("lower");
 	} else {
-	textBox.classList.remove("lower");
+		textBox.classList.remove("lower");
 	}
 
-	if (backArrowClass) {
-	
-	backArrow.classList.add("show");
-	backArrow.classList.remove("hidden");
+	if (backArrowClass) {	
+		backArrow.classList.add("show");
+		backArrow.classList.remove("hidden");
 	} else {
-	backArrow.classList.remove("show");
-	backArrow.classList.add("hidden");
+		backArrow.classList.remove("show");
+		backArrow.classList.add("hidden");
 	}
 }
 
-function setMode(){
+function setMode() {
 	console.log(mode);
 	//textBoxClass, Circle1Class, Circle2Class, buttonPrompt, buttonPrompt2, buttonPrompt3, buttonTrue, buttonFalse, buttonA, buttonB, buttonC, buttonD
 	if(mode == 0){
@@ -290,7 +351,7 @@ function modder(){
 	mode = (mode + 1) % 6
 	setMode(mode);
 
-	addResponce("Do you want to know whats up?");
+	addResponse("Do you want to know whats up?");
 	addTranscript("Yes, I would");
 }
 
@@ -350,7 +411,7 @@ function addTranscript(transcript, size) {
 	}, 300); // Match the transition duration
 }
 
-function addResponce(responce, img, size){
+function addResponse(responce, img, size){
 	if (!size) {
 		size = "1.5vh";
 	}
@@ -442,57 +503,22 @@ function quizBegin(){
 	//Wait
 }
 
-async function quizBeginTF(){
-	mode = 4;
-	setMode();
-	//Make Api call
-	// Make API call
-	if (Language === "English") {
-		getQuizTF().then(responce => {
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		addResponce("");
-		correct_answer = responce.correct_answer;
-		addResponce(responce.question);
-		});
-	} else {
-		try {
-		// Wait for getQuizTF() to resolve
-		const responce = await getQuizTF();
+async function quizBeginTF() {
+	url = base_url + "/generate-quiz"
 
-		// Wait for both translations to resolve
-		correct_answer = responce.correct_answer;
-		const question = await translate(responce.question);
+	const data = {
+		url: url,
+		experience: 'Battery Video',
+		quiz_type: "true/false"
+	};
 
-		// Add translated responses
-		addResponce(question);
-		} catch (error) {
-		console.error("Error in quizBeginTF:", error);
-		}
-	}
+	quizSocket.send(JSON.stringify(data))
 }
 
 function quizAnswerTF(sent){
 	if(sent == correct_answer){
 		confetti.start()
-		addResponce("Great Job!! :P");
+		addResponse("Great Job!! :P");
 		quizBeginTF();
 		setTimeout('confetti.stop()',3000);
 	}
@@ -505,12 +531,12 @@ function backToMain(){
 	document.getElementById("buttonB").style.opacity = 0;
 	document.getElementById("buttonC").style.opacity = 0;
 	document.getElementById("buttonD").style.opacity = 0;
-	addResponce("", null, "100vh");
+	addResponse("", null, "100vh");
 
 	if(Language == "English"){
-	addResponce("Hello! Click the microphone icon below to talk to me!", null,"5vh");
+		addResponse("Hello! Click the microphone icon below to talk to me!", null,"5vh");
 	} else {
-		translate("Hello! Click the microphone icon below to talk to me!").then( words => addResponce(words, null, "3vh"));
+		translate("Hello! Click the microphone icon below to talk to me!").then(words => addResponse(words, null, "3vh"));
 	}
 }
 
@@ -551,17 +577,17 @@ async function quizBeginMC() {
 		const Answers = await Promise.all(responce.answers.map(answer => (answer)));
 
 		for (let i = 0; i < 18; i++) {
-		addResponce("");
+			addResponse("");
 		}
 
 		// Add translated responses with unique images
-		addResponce(Answers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
-		addResponce(Answers[2], createImageElement("./assets/whiteCircle.png"));
-		addResponce(Answers[1], createImageElement("./assets/whiteSquare.png"));
-		addResponce(Answers[0], createImageElement("./assets/whiteTriangle.png"));
+		addResponse(Answers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
+		addResponse(Answers[2], createImageElement("./assets/whiteCircle.png"));
+		addResponse(Answers[1], createImageElement("./assets/whiteSquare.png"));
+		addResponse(Answers[0], createImageElement("./assets/whiteTriangle.png"));
 
 		// Add translated question as a response
-		addResponce(question);
+		addResponse(question);
 
 		} else{
 		// Translate question and answers
@@ -569,17 +595,17 @@ async function quizBeginMC() {
 		const translatedAnswers = await Promise.all(responce.answers.map(answer => translate(answer)));
 
 		for (let i = 0; i < 18; i++) {
-		addResponce("");
+		addResponse("");
 		}
 
 		// Add translated responses with unique images
-		addResponce(translatedAnswers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
-		addResponce(translatedAnswers[2], createImageElement("./assets/whiteCircle.png"));
-		addResponce(translatedAnswers[1], createImageElement("./assets/whiteSquare.png"));
-		addResponce(translatedAnswers[0], createImageElement("./assets/whiteTriangle.png"));
+		addResponse(translatedAnswers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
+		addResponse(translatedAnswers[2], createImageElement("./assets/whiteCircle.png"));
+		addResponse(translatedAnswers[1], createImageElement("./assets/whiteSquare.png"));
+		addResponse(translatedAnswers[0], createImageElement("./assets/whiteTriangle.png"));
 
 		// Add translated question as a response
-		addResponce(translatedQuestion);
+		addResponse(translatedQuestion);
 		}
 	} catch (error) {
 		console.error("Error in quizBeginMC:", error);
@@ -587,9 +613,9 @@ async function quizBeginMC() {
 }
 
 function quizAnswerMC(sent, me){
-	if(sent == correct_answer){
+	if (sent == correct_answer){
 		confetti.start()
-		addResponce("Great Job!! :P")
+		addResponse("Great Job!! :P")
 		quizBeginMC();
 		setTimeout('confetti.stop()',3000);
 	} else {
@@ -655,7 +681,7 @@ async function generateResponce(){
 		// Wait for the response
 		history[history.length] = {"role": "assistant", 
 			"content" : response.data.reply}
-		addResponce(response.data.reply);
+		addResponse(response.data.reply);
 		textToSpeech(response.data.reply);
 		return response.data}); // Return the response data
 	} catch (error) {
@@ -694,41 +720,41 @@ async function textToSpeech(text) {
 
 //Prompt the bot fit the role better
 async function innit(exhibitInnit){
-	const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
-	addResponce("Hello! Click the microphone icon below to talk to me!", null,"5vh");
-	try {
-		// Make the GET request using fetch
-		const response = await fetch(url);
+	// const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
+	// addResponse("Hello! Click the microphone icon below to talk to me!", null, "5vh");
+	// try {
+	// 	// Make the GET request using fetch
+	// 	const response = await fetch(url);
 
-		// Check if the response was successful (status code 200)
-		if (response.ok) {
-		// Parse the JSON response
-		const data = await response.json();
-		const experience = data.find(exp => exp.ExperienceName === exhibitInnit);
-		console.log(data);
-		if (experience) {
-			exhibit = experience.ExperienceName;
-			console.log(experience);
-			console.log(exhibit);
-			history[history.length] = 
-			{"role": "system", "content": ("I would you to make your responses one or two sentences and fewer than 50 words." + 
-			"You are a helpful assistant at a children's museum, Discovery World in Milwaukee. You are mostly likley talking wiht a child whos curious about the exhibit they're at. The exhibit you're at right now is" + experience.ExperienceName + 
-			"Here is some of the signs at the  exhibit you are currentlty at: " + experience.Copy +
-			"A general decription of this exhibit is: " + experience.Description +
-			"Provide the users with fun facts, and maybe even tell them to take a quiz by clicking below if they're curious" +
-			"Discovery World has other exhibits too. Encourage users to look at other exhibits. Exhibits that are" +
-			"close together have simular topics. Here is a json of other Discover World exhibits:" + data
-			)}
+	// 	// Check if the response was successful (status code 200)
+	// 	if (response.ok) {
+	// 		// Parse the JSON response
+	// 		const data = await response.json();
+	// 		const experience = data.find(exp => exp.ExperienceName === exhibitInnit);
+	// 		console.log(data);
+	// 		if (experience) {
+	// 			exhibit = experience.ExperienceName;
+	// 			console.log(experience);
+	// 			console.log(exhibit);
+	// 			history[history.length] = 
+	// 			{"role": "system", "content": ("I would you to make your responses one or two sentences and fewer than 50 words." + 
+	// 			"You are a helpful assistant at a children's museum, Discovery World in Milwaukee. You are mostly likley talking wiht a child whos curious about the exhibit they're at. The exhibit you're at right now is" + experience.ExperienceName + 
+	// 			"Here is some of the signs at the  exhibit you are currentlty at: " + experience.Copy +
+	// 			"A general decription of this exhibit is: " + experience.Description +
+	// 			"Provide the users with fun facts, and maybe even tell them to take a quiz by clicking below if they're curious" +
+	// 			"Discovery World has other exhibits too. Encourage users to look at other exhibits. Exhibits that are" +
+	// 			"close together have simular topics. Here is a json of other Discover World exhibits:" + data
+	// 			)}
 
-		} else {
-			console.log('Experience not found');
-		}
-		} else {
-		console.error(`Request failed with status code ${response.status}: ${response.statusText}`);
-		}
-	} catch (error) {
-		console.error('Error during request:', error);
-	}
+	// 		} else {
+	// 			console.log('Experience not found');
+	// 		}
+	// 	} else {
+	// 	console.error(`Request failed with status code ${response.status}: ${response.statusText}`);
+	// 	}
+	// } catch (error) {
+	// 	console.error('Error during request:', error);
+	// }
 }
 
 async function getQuizMC(){
@@ -764,35 +790,36 @@ async function getQuizMC(){
 }
 
 async function getQuizTF(){
-	//Replace with the actual URL of your API
-	const url = "http://localhost:8080/generate-quiz"
 
-	console.log(exhibit);
+	// //Replace with the actual URL of your API
+	// const url = "http://localhost:8080/generate-quiz"
 
-	//Define the chat history
-	const data = {
-	experience: exhibit,
-	quiz_type: "true_false"
-	};
+	// console.log(exhibit);
 
-	localStorage.setItem('TFdata', JSON.stringify(data));
-	const storedData = JSON.parse(localStorage.getItem('TFdata'));
+	// //Define the chat history
+	// const data = {
+	// 	experience: exhibit,
+	// 	quiz_type: "true_false"
+	// };
 
-	console.log(storedData);
-	try {
-	// Use await directly to handle the response
-	const responseTF = await axios.post(url, json=data);
+	// localStorage.setItem('TFdata', JSON.stringify(data));
+	// const storedData = JSON.parse(localStorage.getItem('TFdata'));
 
-	// Log the response for debugging
-	console.log("Response from server:", responseTF.data);
+	// console.log(storedData);
+	// try {
+	// 	// Use await directly to handle the response
+	// 	const responseTF = await axios.post(url, json=data);
 
-	// Return the response data
-	return responseTF.data; // Make sure the return is outside of any then block
-	} catch (error) {
-	// Log detailed error information
-	console.error("Error in postData:", error.response?.data || error.message);
-	throw error; // Re-throw the error to propagate it
-	}
+	// 	// Log the response for debugging
+	// 	console.log("Response from server:", responseTF.data);
+
+	// 	// Return the response data
+	// 	return responseTF.data; // Make sure the return is outside of any then block
+	// } catch (error) {
+	// 	// Log detailed error information
+	// 	console.error("Error in postData:", error.response?.data || error.message);
+	// 	throw error; // Re-throw the error to propagate it
+	// }
 }
 
 async function translateButtons() {
@@ -805,11 +832,11 @@ async function translateButtons() {
 	try {
 		// Translate each button's innerHTML
 		const translations = await Promise.all([
-		translate(buttonPromptEl.innerHTML),
-		translate(buttonPrompt2El.innerHTML),
-		translate(buttonPrompt3El.innerHTML),
-		translate(buttonTrueEl.innerHTML),
-		translate(buttonFalseEl.innerHTML),
+			translate(buttonPromptEl.innerHTML),
+			translate(buttonPrompt2El.innerHTML),
+			translate(buttonPrompt3El.innerHTML),
+			translate(buttonTrueEl.innerHTML),
+			translate(buttonFalseEl.innerHTML),
 		]);
 
 		// Assign translations back to their respective buttons
