@@ -3,7 +3,7 @@ let language = "English";
 let mode = 0;
 let correctAnswer;
 let sleepyClock = new Date();
-let exhibit = 'Meresamun Mummy';
+let exhibitName = 'Meresamun Mummy';
 // 3 minutes reset without interaction
 const sleepTimer = 180000;
 let volume = 1;
@@ -75,7 +75,7 @@ const getExperiencesSocket = initializeWebSocket("ws://localhost:8000/ws/get-exp
 		getExperiences();
 	},
 	onMessage: (data) => {
-		const experience = data.find(exp => exp.ExperienceName === exhibit);
+		const experience = data.find(exp => exp.ExperienceName === exhibitName);
 		exhibit = data.exhibit
 		console.log(data);
 		if (experience) {
@@ -141,6 +141,7 @@ const quizSocket = initializeWebSocket("ws://localhost:8000/ws/quiz", {
 			addResponse(question);
 		} else if (mode == 5) {
 			const question = data.question;
+			console.log(data.answers);
 			const answers = shuffleArray(data.answers);
 			
 			correctAnswer = answers.indexOf(data.correct_answer);
@@ -817,9 +818,9 @@ async function quizBeginMC() {
 	spinOn();
 
 	const url = `${baseUrl}/generate-quiz`;
-  
+	
 	const payload = {
-	  experience: 'Battery Video',
+	  experience: exhibitName,
 	  quiz_type: "multiple_choice",
 	};
   
@@ -974,7 +975,7 @@ async function init() {
 function getExperiences() {
 	const url = `${baseUrl}/get-experiences`;
 	const payload = {
-	  exhibit: exhibit,
+	  exhibit: exhibitName,
 	};
 
 	console.log(payload);
