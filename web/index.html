@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="./CSS/language.css">
     <link rel="stylesheet" href="./CSS/microphone.css">
     <link rel="stylesheet" href="./CSS/textbox.css">
+    <link rel="stylesheet" href="./CSS/mute.css">
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="./Scripts/main.js"></script>
@@ -13,14 +14,14 @@
 </head>
 
 
-<body onload="innit('Meresamun Mummy')">
+<body onload="innit('Meresamun Mummy'), sleepy()">
     <div id="particles-js"></div>
     <script src="./Scripts/particles.js"></script>
 
   <div id="wrapper">
     <div id="headerDiv" class="layer">
         <img src="./images/logos/DW.png" float="center" width="25%"></img>
-        <div id="spins" class="spinner spinOn"></div>
+        <div id="spins" class="spinner"></div>
       </div>
 
 
@@ -41,6 +42,12 @@
         onClick="toggleMicrophoneIcon()"
         >
         <img src="./images/logos/microphone.svg" id="microphoneIcon" class=""></img>
+      </button>
+
+      <button id ="mute"  
+        onClick="muteToggle()"
+        >
+        <img src="./assets/volumeHigh.svg" id="muteIcon" class=""></img>
       </button>
         </div>
 
@@ -97,6 +104,7 @@
             <img src="./images/logos/language.svg" class='inactive' id="langaugeIcon"></img>
             </button>
               <ul id="languageList" class="ULinactive">
+                <li><button id="otherLanguageButton" onClick="toggleMicrophoneIcon(true)">Other + <img src="./images/logos/microphone.svg" height="80%" style="float: left" id="microphoneIcon" class=""></img></button></li>
                     <li><button onClick="updateLanguage('English')">🇺🇸 English</button></li>
                     <li><button onClick="updateLanguage('Spanish')">🇪🇸 Español</button></li>
                     <li><button onClick="updateLanguage('Hmong')">🇱🇦 Hmoob</button></li>

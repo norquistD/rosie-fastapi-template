@@ -4,6 +4,13 @@ let mutex = false;
 var Language = "English";
 var mode = 0;
 var correct_answer;
+var sleepyClock = new Date();
+//3 min resets wihtout interaction
+var sleepTimer = 180000;
+var volume = 1;
+
+//reset sleep timer
+//sleepyClock = new Date();
 
 //initial prompting is done in the innit function, baed on current exhibit
 const history = [];
@@ -145,57 +152,62 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-async function toggleMicrophoneIcon() {
-	const microphoneIcon = document.getElementById('microphoneIcon');
-	
-	if (!microphoneIcon) {
-		console.error('Element with ID "microphoneIcon" not found.');
-		return;
-	}
-	
-	microphoneIcon.classList.toggle('on');
+  async function toggleMicrophoneIcon(language) {
+    const microphoneIcon = document.getElementById('microphoneIcon');
+    const otherIcon = document.getElementById('otherLanguageButton');
+    if (!microphoneIcon) {
+      console.error('Element with ID "microphoneIcon" not found.');
+      return;
+    }
+    
+    microphoneIcon.classList.toggle('on');
+    otherIcon.classList.toggle('on');
 
-	if (isRecording) {
-		// Stop the recording
-		mediaRecorder.stop();
-		isRecording = false;
-		console.log('Recording stopped');
-	} else {
-		try {
-			// Request microphone access
-			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-			mediaRecorder = new MediaRecorder(stream);
-			
-			mediaRecorder.ondataavailable = (event) => {
-			audioChunks.push(event.data);
-			};
-			
-			mediaRecorder.onstop = () => {
-			// Create an audio blob and URL for playback
-			const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-			const audioUrl = URL.createObjectURL(audioBlob);
-			const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
+    if (isRecording) {
+      // Stop the recording
+      mediaRecorder.stop();
+      isRecording = false;
+      console.log('Recording stopped');
+    } else {
+      try {
+        // Request microphone access
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+          // Create an audio blob and URL for playback
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
 
-				transcripeFile(audioFile)
-			.then((transcript) => { addTranscript(transcript.transcription);
-				history[history.length] = {"role": "user", 
-					"content" : transcript.transcription}
-					generateResponce();
-				}
-				) // Handle async function
-			.catch((error) => console.error("Error in transcription:", error));
-			audioChunks = [];
-			};
-			
-			// Start recording
-			mediaRecorder.start();
-			isRecording = true;
-			console.log('Recording started');
-		} catch (error) {
-			console.error('Error accessing microphone:', error);
-		}
-	}
-}
+          //HERE IS WHERE TRANSCRIPTION HAPPENS
+            transcripeFile(audioFile)
+           .then((transcript) => { if(language){
+            console.log(transcript.transcription);
+              updateLanguage(transcript.transcription);
+           } else{addTranscript(transcript.transcription);
+              history[history.length] = {"role": "user", 
+                "content" : transcript.transcription}
+                generateResponce();}
+              }
+             ) // Handle async function
+          .catch((error) => console.error("Error in transcription:", error));
+          audioChunks = [];
+        };
+        
+        // Start recording
+        mediaRecorder.start();
+        isRecording = true;
+        console.log('Recording started');
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+      }
+    }
+  }
 
 function toggleLanguageElements() {
 	// Define the elements and their classes to toggle
@@ -219,19 +231,19 @@ function toggleLanguageElements() {
 	});
 }
 
-function updateLanguage(newLanguage) {
-	document.getElementById("buttonA").style.opacity = 0;
-	document.getElementById("buttonB").style.opacity = 0;
-	document.getElementById("buttonC").style.opacity = 0;
-	document.getElementById("buttonD").style.opacity = 0;
-	mode=0;
-	setMode();
-	console.log("ping");
-	Language = newLanguage;
-	history[history.length] = {"role": "system", "content": ("The user has switched the current langauge to: " + Language)};
-	translate("Hello, I'm now speaking in " + Language + " Click the microphone icon below to talk to me!").then( words => addResponse(words, null, "3vh"));
-	translateButtons();
-	toggleLanguageElements();
+async function updateLanguage(newLanguage){
+  document.getElementById("buttonA").style.opacity = 0;
+   document.getElementById("buttonB").style.opacity = 0;
+  document.getElementById("buttonC").style.opacity = 0;
+   document.getElementById("buttonD").style.opacity = 0;
+  mode=0;
+  setMode();
+  console.log("ping");
+  Language = newLanguage;
+  history[history.length] = {"role": "system", "content": ("The user has switched the current langauge to: " + Language)};
+  translate("Hello, I'm now speaking in " + Language + " Click the microphone icon below to talk to me!").then( words => addResponce(words, null, "3vh"));
+  translateButtons();
+  toggleLanguageElements();
 }
 
 function spinOn() {
@@ -318,33 +330,36 @@ function setClassesOfElements(
 	}
 }
 
-function setMode() {
-	console.log(mode);
-	//textBoxClass, Circle1Class, Circle2Class, buttonPrompt, buttonPrompt2, buttonPrompt3, buttonTrue, buttonFalse, buttonA, buttonB, buttonC, buttonD
-	if(mode == 0){
-		//Deafaut
-		setClassesOfElements(false, false, false, true, false, false, false, false, false, false, false, false, false);
-	}
-	if(mode == 1){
-		//Circle1Big
-		setClassesOfElements(true, true, false, true, false, false, false, false, false, false, false, false, false);
-	}
-	if(mode == 2){
-		//Circle2Big
-		setClassesOfElements(true, false, true, true, false, false, false, false, false, false, false, false, false);
-	}
-	//Quiz promt TF / mC
-	if(mode == 3){
-		setClassesOfElements(false, false, false, false, true, true, false, false, false, false, false, false, true);
-	}
-	//TF
-	if(mode == 4){
-		setClassesOfElements(false, false, false, false, false, false, true, true, false, false, false, false, true);
-	}
-	//MC
-	if(mode == 5){
-		setClassesOfElements(false, false, false, false, false, false, false, false, true, true, true, true, true);
-	}
+function setMode(){
+//reset sleep timer
+sleepyClock = new Date();
+
+  console.log(mode);
+  //textBoxClass, Circle1Class, Circle2Class, buttonPrompt, buttonPrompt2, buttonPrompt3, buttonTrue, buttonFalse, buttonA, buttonB, buttonC, buttonD
+  if(mode == 0){
+    //Deafaut
+    setClassesOfElements(false, false, false, true, false, false, false, false, false, false, false, false, false);
+  }
+  if(mode == 1){
+    //Circle1Big
+    setClassesOfElements(true, true, false, true, false, false, false, false, false, false, false, false, false);
+  }
+  if(mode == 2){
+    //Circle2Big
+    setClassesOfElements(true, false, true, true, false, false, false, false, false, false, false, false, false);
+  }
+  //Quiz promt TF / mC
+  if(mode == 3){
+    setClassesOfElements(false, false, false, false, true, true, false, false, false, false, false, false, true);
+  }
+  //TF
+  if(mode == 4){
+    setClassesOfElements(false, false, false, false, false, false, true, true, false, false, false, false, true);
+  }
+  //MC
+  if(mode == 5){
+    setClassesOfElements(false, false, false, false, false, false, false, false, true, true, true, true, true);
+  }
 }
 
 function modder(){
@@ -411,10 +426,12 @@ function addTranscript(transcript, size) {
 	}, 300); // Match the transition duration
 }
 
-function addResponse(responce, img, size){
-	if (!size) {
-		size = "1.5vh";
-	}
+function addResponce(responce, img, size){
+  //reset sleep timer
+sleepyClock = new Date();
+  if(!size){
+    size = "1.5vh";
+  }
 
 	const textBoxContainer = document.getElementById('textBox');
 
@@ -431,25 +448,25 @@ function addResponse(responce, img, size){
 
 	const textBoxDiv = document.createElement('div');
 
-	// Create a new text box element
-	const textBox = document.createElement('p');
-	textBoxDiv.style.cssText =`
-		width: 95%;
-		color: white;
-		text-align: left;
-		opacity: 0;
-		transition: 1s ease;
-		font-size: ` + size + ` ;
-		float: left;
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-	`;
-	if(img != null){
-		console.log(img)
-		textBoxDiv.appendChild(img);
-	}
-	textBoxDiv.appendChild(textBox)
+  // Create a new text box element
+  const textBox = document.createElement('p');
+  textBoxDiv.style.cssText =`
+    width: 95%;
+    color: white;
+    text-align: left;
+    opacity: 0;
+    transition: 1s ease;
+    font-size: ` + size + ` ;
+    float: left;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  `;
+  if(img != null){
+    console.log(img)
+    textBoxDiv.appendChild(img);
+  }
+  textBoxDiv.appendChild(textBox)
 
 
 	// Append the text box to the container
@@ -624,26 +641,29 @@ function quizAnswerMC(sent, me){
 }
 
 async function translate(text) {
-	const url = "http://localhost:8080/translate";
-	console.log("Translating:", text);
+  spinOn();
+  const url = "http://localhost:8080/translate";
+  console.log("Translating:", text);
 
 	const body = {
 		text: text,
 		language: Language
 	};
 
-	try {
-		const response = await axios.post(url, body); // Await the response directly
-		console.log("Translated text:", response.data.translated_text);
-		return response.data.translated_text; // Return the translated text
-	} catch (error) {
-		console.error("Error in translate function:", error);
-		throw error; // Re-throw to handle errors in the caller
-	}
+  try {
+    const response = await axios.post(url, body); // Await the response directly
+    console.log("Translated text:", response.data.translated_text);
+      spinOff();
+    return response.data.translated_text; // Return the translated text
+  } catch (error) {
+    console.error("Error in translate function:", error);
+    throw error; // Re-throw to handle errors in the caller
+  }
 }
 
 async function transcripeFile(audioFile) {
-	const url = "http://localhost:8080/audio-to-text";
+  spinOn();
+  const url = "http://localhost:8080/audio-to-text";
 
 	// Create a FormData object and append the file
 	const formData = new FormData();
@@ -657,44 +677,48 @@ async function transcripeFile(audioFile) {
 		},
 		});
 
-		// Log and return the response data
-		console.log("Response data:", response.data);
-		return response.data;
-	} catch (error) {
-		// Log detailed error information for debugging
-		console.error("Error in transcripeFile:", error);
-		throw error;
-	}
+    // Log and return the response data
+    console.log("Response data:", response.data);
+    spinOff();
+    return response.data;
+  } catch (error) {
+    // Log detailed error information for debugging
+    console.error("Error in transcripeFile:", error);
+    throw error;
+  }
 }
 
 async function generateResponce(){
-	const url = "http://localhost:8080/continue-chat";
-	// Storing the history data in LocalStorage
-	console.log(history);
-	localStorage.setItem('history', JSON.stringify(history));
+  spinOn();
+  const url = "http://localhost:8080/continue-chat";
+// Storing the history data in LocalStorage
+console.log(history);
+localStorage.setItem('history', JSON.stringify(history));
 
 	// Retrieving the history data from LocalStorage
 	const storedHistory = JSON.parse(localStorage.getItem('history'));
 
-	try {
-		await axios.post(url, storedHistory).then(response => {
-		// Wait for the response
-		history[history.length] = {"role": "assistant", 
-			"content" : response.data.reply}
-		addResponse(response.data.reply);
-		textToSpeech(response.data.reply);
-		return response.data}); // Return the response data
-	} catch (error) {
-		console.error("Error in postData:", error);
-		throw error; // Re-throw the error so the caller can handle it
-	}
+  try {
+    await axios.post(url, storedHistory).then(response => {
+       // Wait for the response
+       history[history.length] = {"role": "assistant", 
+        "content" : response.data.reply}
+      addResponce(response.data.reply);
+      textToSpeech(response.data.reply);
+      spinOff();
+    return response.data}); // Return the response data
+  } catch (error) {
+    console.error("Error in postData:", error);
+    throw error; // Re-throw the error so the caller can handle it
+  }
 }
 
 async function textToSpeech(text) {
-	const url = "http://localhost:8080/text-to-audio";
-
-	// Step 1: Prepare the data object
-	const data = { text: text };
+  spinOn();
+  const url = "http://localhost:8080/text-to-audio";
+  
+  // Step 1: Prepare the data object
+  const data = { text: text };
 
 	try {
 		// Step 2: Send POST request to the server
@@ -705,26 +729,29 @@ async function textToSpeech(text) {
 		// Step 4: Convert the binary response data to a Blob
 		const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
 
-		// Step 5: Create an audio element and set the Blob as the source
-		const audio = new Audio(URL.createObjectURL(audioBlob));
-		audio.play();  // Play the audio
-		console.log('Audio is playing');
-		console.log(audio);
-		} else {
-		throw new Error('Invalid response');
-		}
-	} catch (error) {
-		console.error('Error playing audio:', error);
-	}
+      // Step 5: Create an audio element and set the Blob as the source
+      const audio = new Audio(URL.createObjectURL(audioBlob));
+      spinOff();
+      audio.play();  // Play the audio
+      audio.volume = volume;
+      console.log('Audio is playing');
+      console.log(audio);
+    } else {
+      throw new Error('Invalid response');
+    }
+  } catch (error) {
+    console.error('Error playing audio:', error);
+  }
 }
 
 //Prompt the bot fit the role better
 async function innit(exhibitInnit){
-	// const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
-	// addResponse("Hello! Click the microphone icon below to talk to me!", null, "5vh");
-	// try {
-	// 	// Make the GET request using fetch
-	// 	const response = await fetch(url);
+  addResponce("", null, "100vh");
+  const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
+  addResponce("Hello! Click the microphone icon below to talk to me!", null,"5vh");
+  try {
+    // Make the GET request using fetch
+    const response = await fetch(url);
 
 	// 	// Check if the response was successful (status code 200)
 	// 	if (response.ok) {
@@ -758,8 +785,9 @@ async function innit(exhibitInnit){
 }
 
 async function getQuizMC(){
-	//Replace with the actual URL of your API
-	const url = "http://localhost:8080/generate-quiz"
+  spinOn();
+  //Replace with the actual URL of your API
+const url = "http://localhost:8080/generate-quiz"
 
 	console.log(exhibit);
 
@@ -780,19 +808,20 @@ async function getQuizMC(){
 	// Log the response for debugging
 	console.log("Response from server:", responseMC.data);
 
-	// Return the response data
-	return responseMC.data; // Make sure the return is outside of any then block
-	} catch (error) {
-	// Log detailed error information
-	console.error("Error in postData:", error.response?.data || error.message);
-	throw error; // Re-throw the error to propagate it
-	}
+  // Return the response data
+  spinOff();
+  return responseMC.data; // Make sure the return is outside of any then block
+} catch (error) {
+  // Log detailed error information
+  console.error("Error in postData:", error.response?.data || error.message);
+  throw error; // Re-throw the error to propagate it
+}
 }
 
 async function getQuizTF(){
-
-	// //Replace with the actual URL of your API
-	// const url = "http://localhost:8080/generate-quiz"
+  spinOn();
+  //Replace with the actual URL of your API
+const url = "http://localhost:8080/generate-quiz"
 
 	// console.log(exhibit);
 
@@ -813,13 +842,14 @@ async function getQuizTF(){
 	// 	// Log the response for debugging
 	// 	console.log("Response from server:", responseTF.data);
 
-	// 	// Return the response data
-	// 	return responseTF.data; // Make sure the return is outside of any then block
-	// } catch (error) {
-	// 	// Log detailed error information
-	// 	console.error("Error in postData:", error.response?.data || error.message);
-	// 	throw error; // Re-throw the error to propagate it
-	// }
+  // Return the response data
+  spinOff();
+  return responseTF.data; // Make sure the return is outside of any then block
+} catch (error) {
+  // Log detailed error information
+  console.error("Error in postData:", error.response?.data || error.message);
+  throw error; // Re-throw the error to propagate it
+}
 }
 
 async function translateButtons() {
@@ -852,4 +882,42 @@ async function translateButtons() {
 		console.error("Error translating buttons:", error);
 		return undefined; // Handle errors gracefully
 	}
+}
+
+function sleepy(){
+	let time = new Date().getTime();
+
+  //When timer is 0
+	if(time - sleepTimer > (sleepyClock - 1)){
+
+		mode = 0;
+    setMode();
+		innit(exhibit);
+    document.getElementById("buttonA").style.opacity = 0;
+    document.getElementById("buttonB").style.opacity = 0;
+    document.getElementById("buttonC").style.opacity = 0;
+    document.getElementById("buttonD").style.opacity = 0;
+	}
+	else{
+		setTimeout(sleepy,1000);
+		//console.log((time - sleepTimer) + " > " + (sleepyClock - 1));
+		
+	}
+}
+
+function muteToggle(){
+
+  const mute = document.getElementById("muteIcon");
+  if(volume == 1){
+      volume = 0.5;
+      mute.src= "./assets/volumelow.svg";
+  } else if(volume == 0.5){
+    volume = 0;
+    mute.src= "./assets/mute.svg";
+}
+else if(volume == 0){
+  volume = 1;
+  mute.src= "./assets/volumeHigh.svg";
+}
+
 }
