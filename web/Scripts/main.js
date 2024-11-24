@@ -14,7 +14,7 @@ const pendingRequests = {};
 
 // Initial prompting is done in the init function, based on current exhibit
 const history = [];
-const baseUrl = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/30930/discovery-world";
+const baseUrl = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/3938";
 
 api_password = "password"
 
