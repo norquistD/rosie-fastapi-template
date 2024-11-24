@@ -32,7 +32,7 @@
   .circleImage2 {
     position: fixed;
     top: -10%; /* Adjust to your preferred percentage from the top */
-    right: 65%; /* Adjust to your preferred percentage from the right */
+    right: 66.3%; /* Adjust to your preferred percentage from the right */
     width: 50vw; /* 20% of the viewport width */
     height: 50vw; /* Keep the height the same as the width for a perfect circle */
     overflow: hidden; /* Hide the portion of the image outside the container */

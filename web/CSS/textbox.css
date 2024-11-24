@@ -10,8 +10,72 @@
     z-index:-50;
     transition: 1s;
     overflow: hidden;
+    border-image-slice: 1; /* Ensure the gradient is applied across the border */
+    transition: 1s;
+    box-shadow: none;
 }
 .lower {
     top: 47% !important;
     height: 36vh !important;
 }
+
+.loading {
+    border: none !important;
+    animation: gradientCycle3 3.5s infinite linear;
+   /* animation: gradientCycle2 5s infinite linear;
+    animation: gradientCycle 5s infinite linear; */
+}
+
+@keyframes gradientCycle {
+    0% {
+        box-shadow: 0 0 0 10px linear-gradient(45deg, rgba(33, 27, 75), rgba(255, 255, 255), rgba(230, 65, 123), rgba(194, 227, 246));
+    }
+    25% {
+      border-image-source: linear-gradient(45deg,  rgba(255, 255, 255), rgba(230, 65, 123), rgba(194, 227, 246),  rgba(33, 27, 75));
+    }
+    50% {
+      border-image-source: linear-gradient(45deg,rgba(230, 65, 123), rgba(194, 227, 246),  rgba(33, 27, 75),  rgba(255, 255, 255));
+    }
+    75% {
+      border-image-source: linear-gradient(45deg, rgba(194, 227, 246),  rgba(33, 27, 75),  rgba(255, 255, 255),rgba(230, 65, 123) );
+    }
+    100% {
+      border-image-source: linear-gradient(45deg, rgba(33, 27, 75), rgba(255, 255, 255), rgba(230, 65, 123), rgba(194, 227, 246));
+    }
+  }
+
+  @keyframes gradientCycle2 {
+    0% {
+        box-shadow: 0 0 0 10px rgba(33, 27, 75, 1), 0 0 0 20px rgba(255, 255, 255, 1), 0 0 0 30px rgba(230, 65, 123, 1), 0 0 0 40px rgba(194, 227, 246, 1);
+      }
+      25% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 1), 0 0 0 20px rgba(230, 65, 123, 1), 0 0 0 30px rgba(194, 227, 246, 1), 0 0 0 40px rgba(33, 27, 75, 1);
+      }
+      50% {
+        box-shadow: 0 0 0 10px rgba(230, 65, 123, 1), 0 0 0 20px rgba(194, 227, 246, 1), 0 0 0 30px rgba(33, 27, 75, 1), 0 0 0 40px rgba(255, 255, 255, 1);
+      }
+      75% {
+        box-shadow: 0 0 0 10px rgba(194, 227, 246, 1), 0 0 0 20px rgba(33, 27, 75, 1), 0 0 0 30px rgba(255, 255, 255, 1), 0 0 0 40px rgba(230, 65, 123, 1);
+      }
+      100% {
+        box-shadow: 0 0 0 10px rgba(33, 27, 75, 1), 0 0 0 20px rgba(255, 255, 255, 1), 0 0 0 30px rgba(230, 65, 123, 1), 0 0 0 40px rgba(194, 227, 246, 1);
+      }
+  }
+
+  @keyframes gradientCycle3 {
+    0% {
+      box-shadow: 0 0 15px 5px rgba(33, 27, 75, 1), 0 0 30px 10px rgba(255, 255, 255, 0.7), 0 0 45px 15px rgba(230, 65, 123, 0.5), 0 0 60px 20px rgba(194, 227, 246, 0.3);
+    }
+    25% {
+      box-shadow: 0 0 15px 5px rgba(255, 255, 255, 1), 0 0 30px 10px rgba(230, 65, 123, 0.7), 0 0 45px 15px rgba(194, 227, 246, 0.5), 0 0 60px 20px rgba(33, 27, 75, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 15px 5px rgba(230, 65, 123, 1), 0 0 30px 10px rgba(194, 227, 246, 0.7), 0 0 45px 15px rgba(33, 27, 75, 0.5), 0 0 60px 20px rgba(255, 255, 255, 0.3);
+    }
+    75% {
+      box-shadow: 0 0 15px 5px rgba(194, 227, 246, 1), 0 0 30px 10px rgba(33, 27, 75, 0.7), 0 0 45px 15px rgba(255, 255, 255, 0.5), 0 0 60px 20px rgba(230, 65, 123, 0.3);
+    }
+    100% {
+      box-shadow: 0 0 15px 5px rgba(33, 27, 75, 1), 0 0 30px 10px rgba(255, 255, 255, 0.7), 0 0 45px 15px rgba(230, 65, 123, 0.5), 0 0 60px 20px rgba(194, 227, 246, 0.3);
+    }
+  }

@@ -16,22 +16,6 @@ let isRecording = false; // To track recording state
 
 //API Stuff
 
-
-
-
-//Test quiz varible
-const testQuizData = {
-  answers: ['True', 'False'],
-  correct_answer: 'True',
-  quiz_type: 'true/false',
-  question: 'Lithium-ion batteries are ideal for tablets, smartphones, and electric vehicles because they charge quickly.'
-};
-
-const testMultiChoiceData = {'answers': ['They are heavy and bulky.', 'They lose charge quickly.', 'They charge quickly and drain slowly.', 'They have a memory effect.'],
-   'correct_answer': 'They charge quickly and drain slowly.', 
-   'question': 'What is one benefit of lithium-ion batteries?', 
-   'quiz_type': 'multiple_choice'};
-
 document.addEventListener('DOMContentLoaded', function() {
     particlesJS('particles-js', {
       particles: {
@@ -141,6 +125,31 @@ function toggleLanguageElements() {
       }
     });
   }
+
+function updateLanguage(newLanguage){
+  document.getElementById("buttonA").style.opacity = 0;
+   document.getElementById("buttonB").style.opacity = 0;
+  document.getElementById("buttonC").style.opacity = 0;
+   document.getElementById("buttonD").style.opacity = 0;
+  mode=0;
+  setMode();
+  console.log("ping");
+  Language = newLanguage;
+  history[history.length] = {"role": "system", "content": ("The user has switched the current langauge to: " + Language)};
+  translate("Hello, I'm now speaking in " + Language + " Click the microphone icon below to talk to me!").then( words => addResponce(words, null, "3vh"));
+  translateButtons();
+  toggleLanguageElements();
+}
+
+function spinOn(){
+  const element = document.getElementById("spins");
+  element.classList.add("spinOn");
+}
+
+function spinOff(){
+  const element = document.getElementById("spins");
+  element.classList.remove("spinOn");
+}
 
   function setClassesOfElements(
     textBoxClass, Circle1Class, Circle2Class, buttonPrompt, buttonPrompt2,
@@ -255,7 +264,11 @@ function modder(){
   addTranscript("Yes I would yep");
 }
 
-function addTranscript(transcript) {
+function addTranscript(transcript, size) {
+  if(!size){
+    size = "1.5vh";
+  }
+
   const textBoxContainer = document.getElementById('textBox');
 
   if (!textBoxContainer) {
@@ -278,7 +291,7 @@ function addTranscript(transcript) {
     text-align: right;
     opacity: 0;
     transition: 1s ease;
-    font-size: 1.5vh;
+    font-size:` + size + ` ;
     float: right;
     
   `;
@@ -307,7 +320,11 @@ if (textBoxContainer.firstChild) {
     }, 300); // Match the transition duration
 }
 
-function addResponce(responce, img){
+function addResponce(responce, img, size){
+  if(!size){
+    size = "1.5vh";
+  }
+
   const textBoxContainer = document.getElementById('textBox');
 
   if (!textBoxContainer) {
@@ -325,13 +342,13 @@ function addResponce(responce, img){
 
   // Create a new text box element
   const textBox = document.createElement('p');
-  textBoxDiv.style.cssText = `
+  textBoxDiv.style.cssText =`
     width: 95%;
     color: white;
     text-align: left;
     opacity: 0;
     transition: 1s ease;
-    font-size: 1.5vh;
+    font-size: ` + size + ` ;
     float: left;
     display: flex;
     flex-direction: row;
@@ -395,14 +412,51 @@ function quizBegin(){
     //Wait
 }
 
-function quizBeginTF(){
+async function quizBeginTF(){
   mode = 4;
   setMode();
   //Make Api call
-  getQuizTF().then(responce => {
-  correct_answer = responce.correct_answer;
-  addResponce(responce.question);
-  });
+  // Make API call
+  if (Language === "English") {
+    getQuizTF().then(responce => {
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      addResponce("");
+      correct_answer = responce.correct_answer;
+      addResponce(responce.question);
+    });
+  } else {
+    try {
+      // Wait for getQuizTF() to resolve
+      const responce = await getQuizTF();
+
+      // Wait for both translations to resolve
+      correct_answer = responce.correct_answer;
+      const question = await translate(responce.question);
+
+      // Add translated responses
+      addResponce(question);
+    } catch (error) {
+      console.error("Error in quizBeginTF:", error);
+    }
+  }
 }
 
 function quizAnswerTF(sent){
@@ -421,43 +475,86 @@ function backToMain(){
    document.getElementById("buttonB").style.opacity = 0;
   document.getElementById("buttonC").style.opacity = 0;
    document.getElementById("buttonD").style.opacity = 0;
-}
+   addResponce("", null, "100vh");
 
-function quizBeginMC() {
-  mode = 5;
-  setMode();
-  //Make all buttons vsiable:
-  document.getElementById("buttonA").style.opacity = 1;
-   document.getElementById("buttonB").style.opacity = 1;
-  document.getElementById("buttonC").style.opacity = 1;
-   document.getElementById("buttonD").style.opacity = 1;
-
-  // Make API call (simulated here with test data)
-  getQuizMC().then((responce) => {
-    console.log(responce);
-  correct_answer = responce.answers.indexOf(responce.correct_answer);
-
-  // Helper function to create unique image elements
-  function createImageElement(src, width = "2vh", height = "2vh", float = "left", marginRight = "1vw", transform = "") {
-    const img = document.createElement('img');
-    img.src = src;
-    img.style.width = width;
-    img.style.height = height;
-    img.style.float = float;
-    img.style.marginRight = marginRight;
-    img.style.transform = transform; // Optional: Apply transformation
-    return img;
+   if(Language == "English"){
+   addResponce("Hello! Click the microphone icon below to talk to me!", null,"5vh");
+  } else {
+    translate("Hello! Click the microphone icon below to talk to me!").then( words => addResponce(words, null, "3vh"));
   }
 
-  // Add responses with unique images
-  addResponce(responce.answers[0], createImageElement("./assets/whiteTriangle.png"));
-  addResponce(responce.answers[1], createImageElement("./assets/whiteSquare.png"));
-  addResponce(responce.answers[2], createImageElement("./assets/whiteCircle.png"));
-  addResponce(responce.answers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
+}
 
-  // Add question as a response
-  addResponce(responce.question);
-  });
+async function quizBeginMC() {
+  mode = 5;
+  setMode();
+
+  // Make all buttons visible:
+  document.getElementById("buttonA").style.opacity = 1;
+  document.getElementById("buttonB").style.opacity = 1;
+  document.getElementById("buttonC").style.opacity = 1;
+  document.getElementById("buttonD").style.opacity = 1;
+
+  // Make API call to get the quiz (simulated with test data)
+  try {
+    const responce = await getQuizMC();
+
+    // Reset responses
+    
+
+    // Get the correct answer index
+    correct_answer = responce.answers.indexOf(responce.correct_answer);
+
+    // Helper function to create unique image elements
+    function createImageElement(src, width = "2vh", height = "2vh", float = "left", marginRight = "1vw", transform = "") {
+      const img = document.createElement('img');
+      img.src = src;
+      img.style.width = width;
+      img.style.height = height;
+      img.style.float = float;
+      img.style.marginRight = marginRight;
+      img.style.transform = transform; // Optional: Apply transformation
+      return img;
+    }
+
+    if(Language == "English"){
+    const question = responce.question;
+    const Answers = await Promise.all(responce.answers.map(answer => (answer)));
+
+    for (let i = 0; i < 18; i++) {
+      addResponce("");
+    }
+
+    // Add translated responses with unique images
+    addResponce(Answers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
+    addResponce(Answers[2], createImageElement("./assets/whiteCircle.png"));
+    addResponce(Answers[1], createImageElement("./assets/whiteSquare.png"));
+    addResponce(Answers[0], createImageElement("./assets/whiteTriangle.png"));
+
+    // Add translated question as a response
+    addResponce(question);
+
+    } else{
+    // Translate question and answers
+    const translatedQuestion = await translate(responce.question);
+    const translatedAnswers = await Promise.all(responce.answers.map(answer => translate(answer)));
+
+    for (let i = 0; i < 18; i++) {
+      addResponce("");
+    }
+
+    // Add translated responses with unique images
+    addResponce(translatedAnswers[3], createImageElement("./assets/whiteSquare.png", "2vh", "2vh", "left", "1vw", "rotate(45deg)"));
+    addResponce(translatedAnswers[2], createImageElement("./assets/whiteCircle.png"));
+    addResponce(translatedAnswers[1], createImageElement("./assets/whiteSquare.png"));
+    addResponce(translatedAnswers[0], createImageElement("./assets/whiteTriangle.png"));
+
+    // Add translated question as a response
+    addResponce(translatedQuestion);
+    }
+  } catch (error) {
+    console.error("Error in quizBeginMC:", error);
+  }
 }
 
 function quizAnswerMC(sent, me){
@@ -471,19 +568,22 @@ function quizAnswerMC(sent, me){
   }
 }
 
-async function translate(text){
+async function translate(text) {
   const url = "http://localhost:8080/translate";
+  console.log("Translating:", text);
 
   const body = {
     text: text,
     language: Language
-  }
+  };
+
   try {
-    await axios.post(url, body).then(response => { // Wait for the response
-    return response.data}); // Return the response data
+    const response = await axios.post(url, body); // Await the response directly
+    console.log("Translated text:", response.data.translated_text);
+    return response.data.translated_text; // Return the translated text
   } catch (error) {
-    console.error("Error in postData:", error);
-    throw error; // Re-throw the error so the caller can handle it
+    console.error("Error in translate function:", error);
+    throw error; // Re-throw to handle errors in the caller
   }
 }
 
@@ -566,7 +666,7 @@ async function textToSpeech(text) {
 //Prompt the bot fit the role better
 async function innit(exhibitInnit){
   const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
-
+  addResponce("Hello! Click the microphone icon below to talk to me!", null,"5vh");
   try {
     // Make the GET request using fetch
     const response = await fetch(url);
@@ -634,44 +734,6 @@ try {
 }
 }
 
-async function innit(exhibitInnit){
-  const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
-
-  try {
-    // Make the GET request using fetch
-    const response = await fetch(url);
-
-    // Check if the response was successful (status code 200)
-    if (response.ok) {
-      // Parse the JSON response
-      const data = await response.json();
-      const experience = data.find(exp => exp.ExperienceName === exhibitInnit);
-      console.log(data);
-      if (experience) {
-        exhibit = experience.ExperienceName;
-        console.log(experience);
-        console.log(exhibit);
-        history[history.length] = 
-        {"role": "system", "content": ("I would you to make your responses one or two sentences and fewer than 50 words." + 
-          "You are a helpful assistant at a children's museum, Discovery World in Milwaukee. You are mostly likley talking wiht a child whos curious about the exhibit they're at. The exhibit you're at right now is" + experience.ExperienceName + 
-          "Here is some of the signs at the  exhibit you are currentlty at: " + experience.Copy +
-          "A general decription of this exhibit is: " + experience.Description +
-          "Provide the users with fun facts, and maybe even tell them to take a quiz by clicking below if they're curious" +
-          "Discovery World has other exhibits too. Encourage users to look at other exhibits. Exhibits that are" +
-          "close together have simular topics. Here is a json of other Discover World exhibits:" + data
-          )}
-
-      } else {
-        console.log('Experience not found');
-      }
-    } else {
-      console.error(`Request failed with status code ${response.status}: ${response.statusText}`);
-    }
-  } catch (error) {
-    console.error('Error during request:', error);
-  }
-}
-
 async function getQuizTF(){
   //Replace with the actual URL of your API
 const url = "http://localhost:8080/generate-quiz"
@@ -702,4 +764,36 @@ try {
   console.error("Error in postData:", error.response?.data || error.message);
   throw error; // Re-throw the error to propagate it
 }
+}
+
+async function translateButtons() {
+  const buttonPromptEl = document.getElementById("prompt");
+  const buttonPrompt2El = document.getElementById("leftPrompt");
+  const buttonPrompt3El = document.getElementById("rightPrompt");
+  const buttonTrueEl = document.getElementById("trueButton");
+  const buttonFalseEl = document.getElementById("falseButton");
+
+  try {
+    // Translate each button's innerHTML
+    const translations = await Promise.all([
+      translate(buttonPromptEl.innerHTML),
+      translate(buttonPrompt2El.innerHTML),
+      translate(buttonPrompt3El.innerHTML),
+      translate(buttonTrueEl.innerHTML),
+      translate(buttonFalseEl.innerHTML),
+    ]);
+
+    // Assign translations back to their respective buttons
+    buttonPromptEl.innerHTML = translations[0];
+    buttonPrompt2El.innerHTML = translations[1];
+    buttonPrompt3El.innerHTML = translations[2];
+    buttonTrueEl.innerHTML = translations[3];
+    buttonFalseEl.innerHTML = translations[4];
+
+    console.log("All buttons translated successfully:", translations);
+    return translations; // Return all translations as an array
+  } catch (error) {
+    console.error("Error translating buttons:", error);
+    return undefined; // Handle errors gracefully
+  }
 }
