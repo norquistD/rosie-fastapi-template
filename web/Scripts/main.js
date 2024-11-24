@@ -8,67 +8,74 @@ let mediaRecorder; // To manage the recording state
 let audioChunks = []; // To store audio data
 let isRecording = false; // To track recording state
 
-// const base_url = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/2642/discovery-world/translate";
-// const password = 'password';
+// API Variables
+const base_url = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/29461/discovery-world/";
+const username = "norquistd";
+const passwordAuth = "aKBRVBpGmQx";
 
-// const body = {
-//     text: 'Hello',
-//     language: 'Russian'
-// };
+// Function to make a preflight OPTIONS request
+async function preflightRequest() {
+    const preflightHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": "Basic bm9ycXVpc3RkOmFLQlJWQm1HcFF4",
+        "APIToken": "Bearer password"
+    };
 
-// const username = 'norquistd';
-// const passwordAuth = 'aKBRVBpGmQx';
-
-// const headers = new Headers({
-//     "Content-Type": "application/json",
-//     "Authorization": "Basic " + btoa(`${username}:${password}`),
-// });
-const express = require("express");
-const axios = require("axios");
-
-const app = express();
-const PORT = 3000;
-
-// Middleware to parse JSON bodies
-app.use(express.json());
-
-// Proxy route for translation
-app.post("/proxy/translate", async (req, res) => {
     try {
-        // Extract data from the incoming request
-        const { text, language } = req.body;
+        const response = await fetch(base_url, {
+            method: "OPTIONS", // Preflight request method
+            headers: preflightHeaders,
+            mode: "cors", // Cross-Origin Request
+        });
 
-        // Define the target API endpoint
-        const apiUrl = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/2642/discovery-world/translate";
-
-        // Make the API call using Axios
-        const response = await axios.post(
-            apiUrl,
-            { text, language },
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: "Basic bm9ycXVpc3RkOmFLQlJWQnBHbVF4", // Base64 for 'norquistd:aKBRVBpGmQx'
-                },
-            }
-        );
-
-        // Forward the response to the client
-        res.status(response.status).json(response.data);
-    } catch (error) {
-        // Handle errors and send appropriate responses
-        if (error.response) {
-            res.status(error.response.status).json(error.response.data);
+        if (response.ok) {
+            console.log("Preflight OPTIONS request succeeded");
         } else {
-            res.status(500).json({ error: error.message });
+            throw new Error(`Preflight failed with status: ${response.status}`);
         }
+    } catch (error) {
+        console.error("Error during preflight:", error.message);
     }
-});
+}
 
-// Start the proxy server
-app.listen(PORT, () => {
-    console.log(`Proxy server running on http://localhost:${PORT}`);
-});
+// Function to make the POST request
+async function makePostRequest() {
+    const requestBody = {
+        text: "Hello",
+        language: "Russian",
+    };
+
+    const headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Basic bm9ycXVpc3RkOmFLQlJWQm1HcFF4",
+        "APIToken": "Bearer password",
+    };
+
+    try {
+        // Ensure preflight is successful before making the POST request
+        await preflightRequest();
+
+        // Make the actual POST request
+        const response = await fetch(base_url, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify(requestBody),
+            credentials: "include",
+            mode: "cors",
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log("Translated Text:", data.translated);
+        } else {
+            throw new Error(`Request failed with status: ${response.status}`);
+        }
+    } catch (error) {
+        console.error("Error:", error.message);
+    }
+}
+
+makePostRequest()
 
 //Test quiz varible
 const testQuizData = {

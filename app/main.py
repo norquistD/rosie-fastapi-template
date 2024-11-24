@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request, status, Form
-from fastapi.responses import Response, HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import Response, HTMLResponse, RedirectResponse, JSONResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from api.api import api_router
 from core.logger import logger
@@ -15,13 +15,16 @@ app = FastAPI(
     redirect_slashes=True,
 )
 
+# CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://127.0.0.1:5500", "https://dh-ood.hpc.msoe.edu", f"https://dh-ood.hpc.msoe.edu{get_settings().BASE_URL}"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Token Validation Middleware
 app.add_middleware(TokenValidationMiddleware)
 
 # Include the API router for all the endpoints
@@ -32,6 +35,27 @@ app.include_router(api_router)
 async def health_check():
     return Response(status_code=status.HTTP_200_OK)
 
+# Middleware to log requests
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"Request: {request.method} {request.url}")
+    response = await call_next(request)
+    print(f"Response status: {response.status_code}")
+    return response
+
+# Handle OPTIONS (preflight) requests explicitly
+@app.options("/{full_path:path}")
+async def handle_preflight(full_path: str):
+    """
+    Handle preflight requests for any path.
+    """
+    logger.info(f"Handling preflight request for path: {full_path}")
+    response = PlainTextResponse("OK")
+    response.headers["Access-Control-Allow-Origin"] = "http://127.0.0.1:5500"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Max-Age"] = "86400"  # Cache preflight for 24 hours
+    return response
 
 # Custom login page for the API
 @app.get("/login/", tags=["admin"], include_in_schema=False)
@@ -52,7 +76,6 @@ async def login_page():
     </html>
     """
     return HTMLResponse(html_content)
-
 
 # Custom endpoint to submit the password
 @app.post("/submit-token/", tags=["admin"], include_in_schema=False)
