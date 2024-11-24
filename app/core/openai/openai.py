@@ -25,24 +25,6 @@ async def translate_to_language(text: str, language: str, asyncClient: AsyncOpen
             }
         }
     }
-    bad_language_filter_tool = {
-        "type": "function",
-        "function": {
-            "name": "bad_language_filter",
-            "description": f"Indentifies swear words, slurs, and other bad words not suitable for children in {language}",
-            "parameters": {
-                "good_words": {
-                    "type": "string",
-                    "description": "words that are suitable for children."
-                },
-                "bad_words": {
-                    "type": "string",
-                    "description": "swear words, slurs and other bad words not suitable for children"
-                },
-                "required": ["good_words"]
-            }
-        }
-    }
 
     # Combine all instructions into a single message
     messages = [
@@ -56,14 +38,14 @@ async def translate_to_language(text: str, language: str, asyncClient: AsyncOpen
             '{text}'
             ---
             Use the translation_tool function to return the translated text and details.
-            After that use the bad_language_filter_tool to remove bad words and only return words suitable for children.
+            Don't say bad words please.
             """
         }
     ]
 
     res = await asyncClient.chat.completions.create(
         model=get_settings().COMPLETIONS_MODEL,
-        tools=[translation_tool, bad_language_filter_tool],
+        tools=[translation_tool],
         tool_choice="auto",
         messages=messages,
         temperature=0,       # Minimize randomness
