@@ -4,9 +4,10 @@
 var Language = "English";
 var mode = 0;
 var correct_answer;
-const history = [
-  {"role": "system", "content": "You are a helpful assistant at a children's meusem. I would you to make your responses one sentence and fewer than 50 words."}
-]
+
+//initial prompting is done in the innit function, baed on current exhibit
+const history = []
+let exhibit = "";
 
 //Audio globals
 let mediaRecorder; // To manage the recording state
@@ -14,48 +15,7 @@ let audioChunks = []; // To store audio data
 let isRecording = false; // To track recording state
 
 //API Stuff
-// API endpoint
-const url = "http://localhost:8080/translate";
- 
-const password = 'password';
- 
-const headers = {
-    'APIToken': 'Bearer ' + password
-};
 
-const body = {
-  text: "Help I ned to tranlate this!",
-  language: "Spanish"
-}
- 
-// Basic auth credentials
-const username = 'norquistd';
-const passwordAuth = 'aKBRVBpGmQx';
- 
-// Make the POST request
-axios.post(url, body)
-.then(response => {
-    console.log("Status Code:", response.status);
-    console.log("Content-Type:", response.headers['content-type']);
-    console.log("Response Content:", response.data);
- 
-    // Attempt to parse the response as JSON
-    try {
-        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
-        console.log("JSON Response:", data);
-    } catch (error) {
-        console.log("Failed to parse JSON. Response might not be in JSON format.");
-    }
-})
-.catch(error => {
-    if (error.response) {
-        console.log("Status Code:", error.response.status);
-        console.log("Content-Type:", error.response.headers['content-type']);
-        console.log("Response Content:", error.response.data);
-    } else {
-        console.log("Error:", error.message);
-    }
-});
 
 
 
@@ -439,16 +399,17 @@ function quizBeginTF(){
   mode = 4;
   setMode();
   //Make Api call
-  var responce = testQuizData;
+  getQuizTF().then(responce => {
   correct_answer = responce.correct_answer;
   addResponce(responce.question);
+  });
 }
 
 function quizAnswerTF(sent){
   if(sent == correct_answer){
     confetti.start()
-    addResponce("Great Job!! :P")
-    setTimeout('quizBeginTF();',3000);
+    addResponce("Great Job!! :P");
+    quizBeginTF();
     setTimeout('confetti.stop()',3000);
   }
 }
@@ -472,7 +433,8 @@ function quizBeginMC() {
    document.getElementById("buttonD").style.opacity = 1;
 
   // Make API call (simulated here with test data)
-  var responce = testMultiChoiceData;
+  getQuizMC().then((responce) => {
+    console.log(responce);
   correct_answer = responce.answers.indexOf(responce.correct_answer);
 
   // Helper function to create unique image elements
@@ -495,13 +457,14 @@ function quizBeginMC() {
 
   // Add question as a response
   addResponce(responce.question);
+  });
 }
 
 function quizAnswerMC(sent, me){
   if(sent == correct_answer){
     confetti.start()
     addResponce("Great Job!! :P")
-    setTimeout('quizBeginMC()', 3000);
+    quizBeginMC();
     setTimeout('confetti.stop()',3000);
   } else {
     me.style.opacity = 0;
@@ -564,6 +527,7 @@ const storedHistory = JSON.parse(localStorage.getItem('history'));
        history[history.length] = {"role": "assistant", 
         "content" : response.data.reply}
       addResponce(response.data.reply);
+      textToSpeech(response.data.reply);
     return response.data}); // Return the response data
   } catch (error) {
     console.error("Error in postData:", error);
@@ -571,4 +535,171 @@ const storedHistory = JSON.parse(localStorage.getItem('history'));
   }
 }
 
+async function textToSpeech(text) {
+  const url = "http://localhost:8080/text-to-audio";
+  
+  // Step 1: Prepare the data object
+  const data = { text: text };
 
+  try {
+    // Step 2: Send POST request to the server
+    const response = await axios.post(url, data, { responseType: 'arraybuffer' });
+
+    // Step 3: Check if the response is valid
+    if (response.headers['content-type'] === 'audio/mpeg') {
+      // Step 4: Convert the binary response data to a Blob
+      const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
+
+      // Step 5: Create an audio element and set the Blob as the source
+      const audio = new Audio(URL.createObjectURL(audioBlob));
+      audio.play();  // Play the audio
+      console.log('Audio is playing');
+      console.log(audio);
+    } else {
+      throw new Error('Invalid response');
+    }
+  } catch (error) {
+    console.error('Error playing audio:', error);
+  }
+}
+
+//Prompt the bot fit the role better
+async function innit(exhibitInnit){
+  const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
+
+  try {
+    // Make the GET request using fetch
+    const response = await fetch(url);
+
+    // Check if the response was successful (status code 200)
+    if (response.ok) {
+      // Parse the JSON response
+      const data = await response.json();
+      const experience = data.find(exp => exp.ExperienceName === exhibitInnit);
+      console.log(data);
+      if (experience) {
+        exhibit = experience.ExperienceName;
+        console.log(experience);
+        console.log(exhibit);
+        history[history.length] = 
+        {"role": "system", "content": ("I would you to make your responses one or two sentences and fewer than 50 words." + 
+          "You are a helpful assistant at a children's museum, Discovery World in Milwaukee. You are mostly likley talking wiht a child whos curious about the exhibit they're at. The exhibit you're at right now is" + experience.ExperienceName + 
+          "Here is some of the signs at the  exhibit you are currentlty at: " + experience.Copy +
+          "A general decription of this exhibit is: " + experience.Description +
+          "Provide the users with fun facts, and maybe even tell them to take a quiz by clicking below if they're curious" +
+          "Discovery World has other exhibits too. Encourage users to look at other exhibits. Exhibits that are" +
+          "close together have simular topics. Here is a json of other Discover World exhibits:" + data
+          )}
+
+      } else {
+        console.log('Experience not found');
+      }
+    } else {
+      console.error(`Request failed with status code ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Error during request:', error);
+  }
+}
+
+async function getQuizMC(){
+  //Replace with the actual URL of your API
+const url = "http://localhost:8080/generate-quiz"
+
+console.log(exhibit);
+
+//Define the chat history
+const data = {
+  experience: exhibit,
+  quiz_type: "multiple_choice"
+};
+
+localStorage.setItem('MCdata', JSON.stringify(data));
+const storedData = JSON.parse(localStorage.getItem('MCdata'));
+
+console.log(storedData);
+try {
+  // Use await directly to handle the response
+  const responseMC = await axios.post(url, json=data);
+
+  // Log the response for debugging
+  console.log("Response from server:", responseMC.data);
+
+  // Return the response data
+  return responseMC.data; // Make sure the return is outside of any then block
+} catch (error) {
+  // Log detailed error information
+  console.error("Error in postData:", error.response?.data || error.message);
+  throw error; // Re-throw the error to propagate it
+}
+}
+
+async function innit(exhibitInnit){
+  const url = "http://localhost:8080/get-experiences"; // Replace with your actual API URL
+
+  try {
+    // Make the GET request using fetch
+    const response = await fetch(url);
+
+    // Check if the response was successful (status code 200)
+    if (response.ok) {
+      // Parse the JSON response
+      const data = await response.json();
+      const experience = data.find(exp => exp.ExperienceName === exhibitInnit);
+      console.log(data);
+      if (experience) {
+        exhibit = experience.ExperienceName;
+        console.log(experience);
+        console.log(exhibit);
+        history[history.length] = 
+        {"role": "system", "content": ("I would you to make your responses one or two sentences and fewer than 50 words." + 
+          "You are a helpful assistant at a children's museum, Discovery World in Milwaukee. You are mostly likley talking wiht a child whos curious about the exhibit they're at. The exhibit you're at right now is" + experience.ExperienceName + 
+          "Here is some of the signs at the  exhibit you are currentlty at: " + experience.Copy +
+          "A general decription of this exhibit is: " + experience.Description +
+          "Provide the users with fun facts, and maybe even tell them to take a quiz by clicking below if they're curious" +
+          "Discovery World has other exhibits too. Encourage users to look at other exhibits. Exhibits that are" +
+          "close together have simular topics. Here is a json of other Discover World exhibits:" + data
+          )}
+
+      } else {
+        console.log('Experience not found');
+      }
+    } else {
+      console.error(`Request failed with status code ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Error during request:', error);
+  }
+}
+
+async function getQuizTF(){
+  //Replace with the actual URL of your API
+const url = "http://localhost:8080/generate-quiz"
+
+console.log(exhibit);
+
+//Define the chat history
+const data = {
+  experience: exhibit,
+  quiz_type: "true_false"
+};
+
+localStorage.setItem('TFdata', JSON.stringify(data));
+const storedData = JSON.parse(localStorage.getItem('TFdata'));
+
+console.log(storedData);
+try {
+  // Use await directly to handle the response
+  const responseTF = await axios.post(url, json=data);
+
+  // Log the response for debugging
+  console.log("Response from server:", responseTF.data);
+
+  // Return the response data
+  return responseTF.data; // Make sure the return is outside of any then block
+} catch (error) {
+  // Log detailed error information
+  console.error("Error in postData:", error.response?.data || error.message);
+  throw error; // Re-throw the error to propagate it
+}
+}
