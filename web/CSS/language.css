@@ -5,7 +5,7 @@
   .active {
     transition: 0.7s;
     filter: invert(25%) sepia(100%) saturate(1000%) hue-rotate(190deg); /* Dark blue effect */
-    animation: tiltDrop 1s ease-in-out;
+    animation: sway 10s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
   }
 
   .inactive {
@@ -30,15 +30,19 @@
     z-index:201;
   }
 
-  @keyframes tiltDrop {
+  /* Define the sway keyframes with more steps for smoothness */
+  @keyframes sway {
     0% {
-      transform: rotate(0deg); /* Start at the normal position */
+      transform: rotate(0deg);
     }
-    50% {
-      transform: rotate(-20deg); /* Tilt the image upwards */
+    25% {
+      transform: rotate(10deg);
+    }
+    75% {
+      transform: rotate(-10deg);
     }
     100% {
-      transform: rotate(0deg); /* Quickly drop back to the original position */
+      transform: rotate(0deg);
     }
   }
 

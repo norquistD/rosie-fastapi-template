@@ -10,6 +10,7 @@ fastapi-cors = "*"
 asyncpg = "*"
 openai = "*"
 pandas = "*"
+httpx = "*"
 
 [dev-packages]
 black = "*"

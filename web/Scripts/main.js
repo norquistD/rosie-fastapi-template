@@ -1,18 +1,21 @@
-let mutex = false;
-
 // Global variables
 let language = "English";
 let mode = 0;
 let correctAnswer;
 let sleepyClock = new Date();
+
 // 3 minutes reset without interaction
 const sleepTimer = 180000;
 let volume = 1;
 
+// Translation Queue
+let requestId = 0;
+const pendingRequests = {};
+
 // Initial prompting is done in the init function, based on current exhibit
 const history = [];
 let exhibit = "";
-const baseUrl = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/1649/discovery-world";
+const baseUrl = "https://dh-ood.hpc.msoe.edu/node/dh-node9.hpc.msoe.edu/30930/discovery-world";
 
 api_password = "password"
 
@@ -45,9 +48,14 @@ function initializeWebSocket(url, handlers) {
   };
 
   socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    console.log(`Message from ${url}:`, data);
-    handlers.onMessage && handlers.onMessage(data);
+	console.log(event.currentTarget)
+	if (event.currentTarget.binaryType != "arraybuffer") {
+		const data = JSON.parse(event.data);
+		console.log(`Message from ${url}:`, data);
+		handlers.onMessage && handlers.onMessage(data);
+	} else {
+		handlers.onMessage && handlers.onMessage(event);
+	}
   };
 
   socket.onclose = () => {
@@ -97,13 +105,23 @@ const quizSocket = initializeWebSocket("ws://localhost:8000/ws/quiz", {
     } else {
 		if (mode == 4) {
 			correctAnswer = data.correct_answer;
+
+			for (let i = 0; i < 20; i++) {
+				addResponse("");
+			}
+
 			const question = await translate(data.question);
 			addResponse(question);
 		} else if (mode == 5) {
-			const translatedQuestion = await translate(response.question);
-			const translatedAnswers = await Promise.all(response.answers.map(answer => translate(answer)));
+			const question = data.question;
+			const answers = shuffleArray(data.answers);
+			
+			correctAnswer = answers.indexOf(data.correct_answer);
+
+			const translatedQuestion = await translate(question);
+			const translatedAnswers = await Promise.all(answers.map(answer => translate(answer)));
 		
-			for (let i = 0; i < 18; i++) {
+			for (let i = 0; i < 20; i++) {
 				addResponse("");
 			}
 		
@@ -134,6 +152,99 @@ const quizSocket = initializeWebSocket("ws://localhost:8000/ws/quiz", {
   },
 });
 
+// Initialize WebSocket for Translate
+const translateSocket = initializeWebSocket("ws://localhost:8000/ws/translate", {
+  onMessage: (data) => {
+		const message = data;
+		const { id, translatedText } = message;
+		if (pendingRequests[id]) {
+			pendingRequests[id].resolve(translatedText);
+			delete pendingRequests[id];
+		}
+	},
+});
+
+const transcribeSocket = initializeWebSocket("ws://localhost:8000/ws/audio-to-text", {
+	onMessage: (data) => {
+			if (data.languageToggle) {
+				console.log(data.transcription);
+				updateLanguage(data.transcription);
+			} else {
+				addTranscript(data.transcription);
+				history.push({ role: "user", content: data.transcription });
+				generateResponse();
+			}
+		},
+});
+
+const continueChatSocket = initializeWebSocket("ws://localhost:8000/ws/continue-chat", {
+	onMessage: (data) => {
+			console.log(data);
+			history.push({ role: "assistant", content: data.reply });
+			addResponse(data.reply);
+			textToSpeech(data.reply);
+			spinOff();
+		},
+});
+
+const textToSpeechSocket = initializeWebSocket("ws://localhost:8000/ws/text-to-audio", {
+	onMessage: (event) => {
+			console.log(event)
+			const audioBlob = new Blob([event.data], { type: "audio/mpeg" });
+			const audioUrl = URL.createObjectURL(audioBlob);
+			const audio = new Audio(audioUrl);
+			audio.play();
+		},
+});
+textToSpeechSocket.binaryType = "arraybuffer";
+
+
+// Modified translate function
+/**
+ * Translates the given text to the current language.
+ * @param {string} text - The text to translate.
+ * @returns {Promise<string>} The translated text.
+ */
+function translate(text) {
+    return new Promise((resolve, reject) => {
+        spinOn();
+
+        const id = ++requestId; // Generate a unique ID for the request
+
+        const payload = {
+            id: id, // Include the ID in the payload
+            text: text,
+            language: language,
+        };
+
+        const url = `${baseUrl}/translate`;
+
+        const data = {
+            endpoint: url,
+            payload: payload,
+            headers: headers,
+            auth: auth
+        };
+
+        // Store the resolve and reject functions to handle later
+        pendingRequests[id] = { resolve, reject };
+
+        // Send the request over WebSocket
+        translateSocket.send(JSON.stringify(data));
+
+        // Optional: Implement a timeout for the request
+        setTimeout(() => {
+            if (pendingRequests[id]) {
+                pendingRequests[id].reject(new Error('Translation request timed out'));
+                delete pendingRequests[id];
+                spinOff();
+            }
+        }, 15000); // 10 seconds timeout
+    }).finally(() => {
+        spinOff();
+    });
+}
+
 /**
  * Randomly shuffles an array.
  * @param {Array} array - The array to shuffle.
@@ -146,13 +257,6 @@ function shuffleArray(array) {
 	}
 	return array;
   }
-
-// Initialize WebSocket for Translate
-const translateSocket = initializeWebSocket("ws://localhost:8000/ws/translate", {
-  onMessage: (data) => {
-    translateSocket.send(data);
-  },
-});
 
 document.addEventListener('DOMContentLoaded', () => {
   particlesJS('particles-js', {
@@ -179,80 +283,69 @@ document.addEventListener('DOMContentLoaded', () => {
  * @param {boolean} languageToggle - Indicates if language is toggled.
  */
 async function toggleMicrophoneIcon(languageToggle) {
-  const microphoneIcon = document.getElementById('microphoneIcon');
-  const otherIcon = document.getElementById('otherLanguageButton');
-  if (!microphoneIcon) {
-    console.error('Element with ID "microphoneIcon" not found.');
-    return;
-  }
+	const microphoneIcon = document.getElementById('microphoneIcon');
+	const otherIcon = document.getElementById('otherLanguageButton');
+	if (!microphoneIcon) {
+		console.error('Element with ID "microphoneIcon" not found.');
+		return;
+	}
 
-  microphoneIcon.classList.toggle('on');
-  otherIcon.classList.toggle('on');
+	microphoneIcon.classList.toggle('on');
+	otherIcon.classList.toggle('on');
 
-  if (isRecording) {
-    mediaRecorder.stop();
-    isRecording = false;
-    console.log('Recording stopped');
-  } else {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
+	if (isRecording) {
+		mediaRecorder.stop();
+		isRecording = false;
+		console.log('Recording stopped');
+	} else {
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			mediaRecorder = new MediaRecorder(stream);
 
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-      };
+			mediaRecorder.ondataavailable = (event) => {
+				audioChunks.push(event.data);
+			};
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
+			mediaRecorder.onstop = async () => {
+				const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+				const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
 
-        try {
-          const transcript = await transcribeFile(audioFile);
-          if (languageToggle) {
-            console.log(transcript.transcription);
-            updateLanguage(transcript.transcription);
-          } else {
-            addTranscript(transcript.transcription);
-            history.push({ role: "user", content: transcript.transcription });
-            generateResponse();
-          }
-        } catch (error) {
-          console.error("Error in transcription:", error);
-        }
+				console.log("Language Toggle is " + languageToggle)
+				await transcribeFile(audioFile, languageToggle);
 
-        audioChunks = [];
-      };
+				audioChunks = [];
+			};
 
-      mediaRecorder.start();
-      isRecording = true;
-      console.log('Recording started');
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-    }
-  }
+			mediaRecorder.start();
+			isRecording = true;
+			console.log('Recording started');
+		} catch (error) {
+			console.error('Error accessing microphone:', error);
+		}
+	}
 }
 
 /**
  * Toggles classes for language elements.
  */
 function toggleLanguageElements() {
-  const elements = [
-    { id: 'languageIcon', class1: 'active', class2: 'inactive' },
-    { id: 'languageList', class1: 'ulactive', class2: 'ULinactive' },
-  ];
+	const elements = [
+		{ id: 'languageIcon', class1: 'active', class2: 'inactive' },
+		{ id: 'languageList', class1: 'ulactive', class2: 'ULinactive' },
+	];
 
-  elements.forEach(({ id, class1, class2 }) => {
-    const element = document.getElementById(id);
-    if (element) {
-      if (element.classList.contains(class1)) {
-        element.classList.replace(class1, class2);
-      } else {
-        element.classList.replace(class2, class1);
-      }
-    } else {
-      console.error(`Element with ID "${id}" not found.`);
-    }
-  });
+	elements.forEach(({ id, class1, class2 }) => {
+		const element = document.getElementById(id);
+		if (element) {
+		if (element.classList.contains(class1)) {
+			element.classList.replace(class1, class2);
+		} else {
+			element.classList.replace(class2, class1);
+		}
+		} else {
+		console.error(`Element with ID "${id}" not found.`);
+		}
+	});
 }
 
 /**
@@ -260,24 +353,24 @@ function toggleLanguageElements() {
  * @param {string} newLanguage - The new language to set.
  */
 async function updateLanguage(newLanguage) {
-  ['buttonA', 'buttonB', 'buttonC', 'buttonD'].forEach(id => {
-    const button = document.getElementById(id);
-    if (button) button.style.opacity = 0;
-  });
+	['buttonA', 'buttonB', 'buttonC', 'buttonD'].forEach(id => {
+		const button = document.getElementById(id);
+		if (button) button.style.opacity = 0;
+	});
 
-  mode = 0;
-  setMode();
-  console.log("Language update triggered");
-  language = newLanguage;
-  history.push({
-    role: "system",
-    content: `The user has switched the current language to: ${language}`,
-  });
+	mode = 0;
+	setMode();
+	console.log("Language update triggered");
+	language = newLanguage;
+	history.push({
+		role: "system",
+		content: `The user has switched the current language to: ${language}`,
+	});
 
-  const translatedMessage = await translate("Hello, I'm now speaking in " + language + ". Click the microphone icon below to talk to me!");
-  addResponse(translatedMessage, null, "3vh");
-  translateButtons();
-  toggleLanguageElements();
+	const translatedMessage = await translateWithCache("Hello, I'm now speaking in " + language + ". Click the microphone icon below to talk to me!");
+	addResponse(translatedMessage, null, "3vh");
+	translateButtons();
+	toggleLanguageElements();
 }
 
 /**
@@ -287,16 +380,16 @@ function spinOn() {
 	const element = document.getElementById("spins");
 	element.classList.add("spinOn");
 	element.style.display = "block";
-  }
+}
   
   /**
    * Removes the spin effect from an element and hides it.
    */
-  function spinOff() {
+function spinOff() {
 	const element = document.getElementById("spins");
 	element.classList.remove("spinOn");
 	element.style.display = "none";
-  }
+}
 
 /**
  * Sets classes for various UI elements based on the current mode.
@@ -587,22 +680,22 @@ function addResponse(response, img = null, size = "1.5vh") {
  * @param {number} [typingSpeed=25] - The speed of typing in ms per character.
  */
 function typeText(element, text, typingSpeed = 25) {
-  if (!element) {
-    console.error('Element is not defined for typing animation.');
-    return;
-  }
+	if (!element) {
+		console.error('Element is not defined for typing animation.');
+		return;
+	}
 
-  let index = 0;
+	let index = 0;
 
-  function typeCharacter() {
-    if (index < text.length) {
-      element.textContent += text.charAt(index);
-      index++;
-      setTimeout(typeCharacter, typingSpeed);
-    }
-  }
+	function typeCharacter() {
+		if (index < text.length) {
+		element.textContent += text.charAt(index);
+		index++;
+		setTimeout(typeCharacter, typingSpeed);
+		}
+	}
 
-  typeCharacter();
+	typeCharacter();
 }
 
 /**
@@ -617,22 +710,22 @@ function quizBegin() {
  * Begins a True/False quiz.
  */
 async function quizBeginTF() {
-  spinOn();
-  const url = `${baseUrl}/generate-quiz`;
+	spinOn();
+	const url = `${baseUrl}/generate-quiz`;
 
-  const payload = {
-    experience: 'Battery Video',
-    quiz_type: "true/false",
-  };
+	const payload = {
+		experience: 'Battery Video',
+		quiz_type: "true/false",
+	};
 
-  const data = {
-	endpoint: url,
-	payload: payload,
-	headers: headers,
-	auth: auth
-  }
+	const data = {
+		endpoint: url,
+		payload: payload,
+		headers: headers,
+		auth: auth
+	}
 
-  quizSocket.send(JSON.stringify(data));
+	quizSocket.send(JSON.stringify(data));
 }
 
 /**
@@ -669,6 +762,7 @@ function backToMain() {
       .then(words => addResponse(words, null, "3vh"));
   }
 }
+
 /**
  * Creates an image element with specified attributes.
  * @param {string} src - Source of the image.
@@ -719,6 +813,7 @@ async function quizBeginMC() {
  * @param {HTMLElement} button - The button element clicked.
  */
 function quizAnswerMC(sent, button) {
+	console.log(sent)
 	if (sent == correctAnswer) {
 		confetti.start();
 		addResponse("Great Job!! :P");
@@ -730,78 +825,74 @@ function quizAnswerMC(sent, button) {
 }
 
 /**
- * Translates the given text to the current language.
- * @param {string} text - The text to translate.
- * @returns {Promise<string>} The translated text.
- */
-async function translate(text) {
-  spinOn();
-  const url = "http://localhost:8080/translate";
-  console.log("Translating:", text);
-
-  const body = {
-    text: text,
-    language: language,
-  };
-
-  try {
-    const response = await axios.post(url, body);
-    console.log("Translated text:", response.data.translated_text);
-    spinOff();
-    return response.data.translated_text;
-  } catch (error) {
-    console.error("Error in translate function:", error);
-    throw error;
-  }
-}
-
-/**
  * Transcribes the given audio file to text.
  * @param {File} audioFile - The audio file to transcribe.
  * @returns {Promise<object>} The transcription result.
  */
-async function transcribeFile(audioFile) {
-  spinOn();
-  const url = "http://localhost:8080/audio-to-text";
+async function transcribeFile(audioFile, languageToggle) {
+	spinOn();
+  
+	const reader = new FileReader();
 
-  const formData = new FormData();
-  formData.append("file", audioFile, audioFile.name);
+    reader.onload = function() {
+        // reader.result is a Data URL (e.g., "data:audio/wav;base64,...")
+        // Extract the Base64 part
+        const base64File = reader.result.split(',')[1]; // Get the part after 'base64,'
 
-  try {
-    const response = await axios.post(url, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+        const url = `${baseUrl}/audio-to-text`;
 
-    console.log("Response data:", response.data);
-    spinOff();
-    return response.data;
-  } catch (error) {
-    console.error("Error in transcribeFile:", error);
-    throw error;
-  }
+        const data = {
+            endpoint: url,
+            payload: {
+                formData: {
+                    file: {
+                        name: audioFile.name,
+                        type: audioFile.type,
+                        data: base64File
+                    }
+                },
+                languageToggle: languageToggle
+            },
+            headers: headers,
+            auth: auth
+        };
+
+		// Send the JSON data through the WebSocket
+		transcribeSocket.send(JSON.stringify(data));
+	};
+
+	reader.onerror = function(error) {
+		console.error("Error reading file:", error);
+		spinOff();
+	};
+
+	// Read the file as a Data URL (Base64)
+	reader.readAsDataURL(audioFile);
 }
 
 /**
  * Generates a response based on the chat history.
  */
 async function generateResponse() {
-  spinOn();
-  const url = "http://localhost:8080/continue-chat";
-  console.log(history);
-  localStorage.setItem('history', JSON.stringify(history));
+	spinOn();
 
-  const storedHistory = JSON.parse(localStorage.getItem('history'));
+	const url = `${baseUrl}/continue-chat`;
+	localStorage.setItem('history', JSON.stringify(history));
+	const storedHistory = JSON.parse(localStorage.getItem('history'));
+	const payload = {
+	  history: storedHistory,
+	};
 
-  try {
-    const response = await axios.post(url, storedHistory);
-    history.push({ role: "assistant", content: response.data.reply });
-    addResponse(response.data.reply);
-    textToSpeech(response.data.reply);
-    spinOff();
-  } catch (error) {
-    console.error("Error in generateResponse:", error);
-    throw error;
-  }
+	console.log(payload);
+
+	const data = {
+	  endpoint: url,
+	  payload: payload,
+	  headers: headers,
+	  auth: auth
+	};
+  
+	continueChatSocket.send(JSON.stringify(data));
 }
 
 /**
@@ -809,27 +900,39 @@ async function generateResponse() {
  * @param {string} text - The text to convert to speech.
  */
 async function textToSpeech(text) {
-  spinOn();
-  const url = "http://localhost:8080/text-to-audio";
+	spinOn();
 
-  const data = { text: text };
+	const url = `${baseUrl}/text-to-audio`;
 
-  try {
-    const response = await axios.post(url, data, { responseType: 'arraybuffer' });
+	const payload = {
+	  text: text,
+	};
 
-    if (response.headers['content-type'] == 'audio/mpeg') {
-      const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
-      const audio = new Audio(URL.createObjectURL(audioBlob));
-      spinOff();
-      audio.volume = volume;
-      audio.play();
-      console.log('Audio is playing', audio);
-    } else {
-      throw new Error('Invalid response');
-    }
-  } catch (error) {
-    console.error('Error playing audio:', error);
-  }
+	const data = {
+	  endpoint: url,
+	  payload: payload,
+	  headers: headers,
+	  auth: auth
+	};
+  
+	textToSpeechSocket.send(JSON.stringify(data));
+
+	// try {
+	// 	const response = await axios.post(url, data, { responseType: 'arraybuffer' });
+
+	// 	if (response.headers['content-type'] == 'audio/mpeg') {
+	// 	const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
+	// 	const audio = new Audio(URL.createObjectURL(audioBlob));
+	// 	spinOff();
+	// 	audio.volume = volume;
+	// 	audio.play();
+	// 	console.log('Audio is playing', audio);
+	// 	} else {
+	// 	throw new Error('Invalid response');
+	// 	}
+	// } catch (error) {
+	// 	console.error('Error playing audio:', error);
+	// }
 }
 
 /**
@@ -840,66 +943,62 @@ async function init(exhibitInit) {
   // Implementation needed based on your requirements
 }
 
-// /**
-//  * Fetches a Multiple Choice quiz from the server.
-//  * @returns {Promise<object>} The quiz data.
-//  */
-// async function getQuizMC() {
-//   spinOn();
-//   const url = "http://localhost:8080/generate-quiz";
+// frontend.js
 
-//   const data = {
-//     experience: exhibit,
-//     quiz_type: "multiple_choice",
-//   };
+const translationCache = new Map();
 
-//   localStorage.setItem('MCdata', JSON.stringify(data));
-//   const storedData = JSON.parse(localStorage.getItem('MCdata'));
-
-//   console.log(storedData);
-
-//   try {
-//     const responseMC = await axios.post(url, data);
-//     console.log("Response from server:", responseMC.data);
-//     spinOff();
-//     return responseMC.data;
-//   } catch (error) {
-//     console.error("Error in getQuizMC:", error.response?.data || error.message);
-//     throw error;
-//   }
-// }
+/**
+ * Translates the given text to the current language with caching.
+ * @param {string} text - The text to translate.
+ * @returns {Promise<string>} The translated text.
+ */
+function translateWithCache(text) {
+    return new Promise((resolve, reject) => {
+        const cacheKey = `${language}:${text}`;
+        if (translationCache.has(cacheKey)) {
+            resolve(translationCache.get(cacheKey));
+        } else {
+            translate(text)
+                .then(translatedText => {
+                    translationCache.set(cacheKey, translatedText);
+                    resolve(translatedText);
+                })
+                .catch(error => reject(error));
+        }
+    });
+}
 
 /**
  * Translates button labels to the current language.
  */
 async function translateButtons() {
-  const buttonPromptEl = document.getElementById("prompt");
-  const buttonPrompt2El = document.getElementById("leftPrompt");
-  const buttonPrompt3El = document.getElementById("rightPrompt");
-  const buttonTrueEl = document.getElementById("trueButton");
-  const buttonFalseEl = document.getElementById("falseButton");
+	const buttonPromptEl = document.getElementById("prompt");
+	const buttonPrompt2El = document.getElementById("leftPrompt");
+	const buttonPrompt3El = document.getElementById("rightPrompt");
+	const buttonTrueEl = document.getElementById("trueButton");
+	const buttonFalseEl = document.getElementById("falseButton");
 
-  try {
-    const translations = await Promise.all([
-      translate(buttonPromptEl.innerHTML),
-      translate(buttonPrompt2El.innerHTML),
-      translate(buttonPrompt3El.innerHTML),
-      translate(buttonTrueEl.innerHTML),
-      translate(buttonFalseEl.innerHTML),
-    ]);
+	try {
+		const translations = await Promise.all([
+			translateWithCache(buttonPromptEl.innerHTML),
+			translateWithCache(buttonPrompt2El.innerHTML),
+			translateWithCache(buttonPrompt3El.innerHTML),
+			translateWithCache(buttonTrueEl.innerHTML),
+			translateWithCache(buttonFalseEl.innerHTML),
+		]);
 
-    buttonPromptEl.innerHTML = translations[0];
-    buttonPrompt2El.innerHTML = translations[1];
-    buttonPrompt3El.innerHTML = translations[2];
-    buttonTrueEl.innerHTML = translations[3];
-    buttonFalseEl.innerHTML = translations[4];
+		buttonPromptEl.innerHTML = translations[0];
+		buttonPrompt2El.innerHTML = translations[1];
+		buttonPrompt3El.innerHTML = translations[2];
+		buttonTrueEl.innerHTML = translations[3];
+		buttonFalseEl.innerHTML = translations[4];
 
-    console.log("All buttons translated successfully:", translations);
-    return translations;
-  } catch (error) {
-    console.error("Error translating buttons:", error);
-    return undefined;
-  }
+		console.log("All buttons translated successfully:", translations);
+		return translations;
+	} catch (error) {
+		console.error("Error translating buttons:", error);
+		return undefined;
+	}
 }
 
 /**
